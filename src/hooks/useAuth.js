@@ -28,6 +28,7 @@ export const useAuth = () => {
     };
 
     const login = async (credentials) => {
+        console.log("login");
         setIsLoading(true);
         try {
             const response = await fetch(API_ENDPOINTS.auth.login, {
@@ -56,6 +57,7 @@ export const useAuth = () => {
     };
 
     const logout = async () => {
+        console.log("logout");
         setIsLoading(true);
         try {
             await fetch(API_ENDPOINTS.auth.logout, {
