@@ -39,8 +39,8 @@ export const useAuth = () => {
             if (!response.ok) throw new Error(data.message);
 
             // "Bearer "를 제거한 후 토큰 저장
-            const accessToken = data.data.accessToken.replace('Bearer ', '');
-            const refreshToken = data.data.refreshToken.replace('Bearer ', '');
+            const accessToken = data.data.accessToken;
+            const refreshToken = data.data.refreshToken;
 
             auth.setTokens(accessToken, refreshToken);
             setUser({ id: data.data.id, email: data.data.email, userNickname: data.data.userNickname });

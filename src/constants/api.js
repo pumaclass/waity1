@@ -1,13 +1,13 @@
-const API_BASE = 'http://localhost:8080';
+const API_BASE = 'http://localhost:8081';
 
 export const API_ENDPOINTS = {
     auth: {
-        signup: `${API_BASE}/api/v1/auth/signup`,
-        login: `${API_BASE}/api/v1/auth/login`,
-        logout: `${API_BASE}/api/v1/auth/logout`,
-        reissue: `${API_BASE}/api/v1/auth/reissue`,
-        checkEmail: `${API_BASE}/api/v1/auth/email/check`,
-        checkNickname: `${API_BASE}/api/v1/auth/nickname/check`,
+        signup: `${API_BASE}/api/v2/auth/signup`,
+        login: `${API_BASE}/api/v2/auth/login`,
+        logout: `${API_BASE}/api/v2/auth/logout`,
+        reissue: `${API_BASE}/api/v2/auth/reissue`,
+        checkEmail: `${API_BASE}/api/v2/auth/email/check`,
+        checkNickname: `${API_BASE}/api/v2/auth/nickname/check`,
     },
     store: {
         list: `${API_BASE}/api/v1/user/stores`,
@@ -39,7 +39,7 @@ export const fetchAPI = async (url, options = {}) => {
 
     const defaultHeaders = {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...(token ? { 'Authorization': `${token}` } : {})
     };
 
     const response = await fetch(url, {

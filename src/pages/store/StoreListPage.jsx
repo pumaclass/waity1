@@ -21,8 +21,8 @@ const StoreListPage = () => {
                 const response = await fetchAPI(API_ENDPOINTS.store.list);
                 console.log('Store API Response:', response); // 디버깅용
 
-                if (response.data) {
-                    setStores(response.data);
+                if (!response.data.empty) {
+                    setStores(response.data.content);
                 }
             } catch (err) {
                 console.error('Failed to fetch stores:', err);
