@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8080';
+const API_BASE = 'http://localhost:8081';
 
 export const API_ENDPOINTS = {
     auth: {
@@ -39,7 +39,7 @@ export const fetchAPI = async (url, options = {}) => {
 
     const defaultHeaders = {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        ...(token ? { 'Authorization': `${token}` } : {})
     };
 
     const response = await fetch(url, {
