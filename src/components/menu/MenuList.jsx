@@ -1,51 +1,48 @@
-import { useState, useEffect } from 'react';
-import { Plus } from 'lucide-react';
-import { useMenu } from '../../hooks/useMenu';
+import React, { useState, useEffect } from 'react';
+import { X } from 'lucide-react';
 import MenuCard from './MenuCard';
+import { PLACEHOLDER_IMAGE } from '../../constants/images';
+import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
 
 const MenuList = ({ storeId, isOwner = false }) => {
-    const { menus, loading, error, fetchMenus, fetchOwnerMenus } = useMenu();
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [menus, setMenus] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [selectedMenu, setSelectedMenu] = useState(null);
 
-    // 컴포넌트 마운트/storeId 변경 시에만 메뉴 목록 가져오기
     useEffect(() => {
-        const fetchData = async () => {
-            if (!storeId) return;
+        const fetchMenus = async () => {
+            if (!storeId) {
+                setLoading(false);
+                return;
+            }
 
             try {
-                if (isOwner) {
-                    await fetchOwnerMenus(storeId);
-                } else {
-                    await fetchMenus(storeId);
-                }
+                setLoading(true);
+                const endpoint = isOwner
+                    ? API_ENDPOINTS.menu.ownerList(storeId)
+                    : API_ENDPOINTS.menu.list(storeId);
+
+                const response = await fetchAPI(endpoint);
+                console.log('Received menu data:', response);
+
+                // response.data에서 메뉴 배열 추출
+                const menuData = response.data || [];
+                setMenus(menuData);
+                setError(null);
             } catch (err) {
-                console.error('MenuList fetch error:', err);
+                console.error('Failed to fetch menus:', err);
+                setError(err.message || '메뉴를 불러오는데 실패했습니다.');
+            } finally {
+                setLoading(false);
             }
         };
 
-        fetchData();
-    }, [storeId, isOwner]); // fetchMenus와 fetchOwnerMenus 제거
+        fetchMenus();
+    }, [storeId, isOwner]);
 
-    const handleEdit = (menu) => {
-        console.log('Editing menu:', menu);
-        setIsModalOpen(true);
-    };
-
-    const handleDelete = async (menuId) => {
-        console.log('Attempting to delete menu:', menuId);
-        if (window.confirm('메뉴를 삭제하시겠습니까?')) {
-            try {
-                // TODO: API 호출
-                // 성공 후에 메뉴 목록 다시 가져오기
-                if (isOwner) {
-                    await fetchOwnerMenus(storeId);
-                } else {
-                    await fetchMenus(storeId);
-                }
-            } catch (error) {
-                console.error('Failed to delete menu:', error);
-            }
-        }
+    const handleMenuClick = (menu) => {
+        setSelectedMenu(menu);
     };
 
     if (loading) {
@@ -74,8 +71,9 @@ const MenuList = ({ storeId, isOwner = false }) => {
                             key={menu.id}
                             menu={menu}
                             isOwner={isOwner}
-                            onEdit={handleEdit}
-                            onDelete={handleDelete}
+                            onEdit={() => {}} // 일단 빈 함수로 처리
+                            onDelete={() => {}} // 일단 빈 함수로 처리
+                            onClick={handleMenuClick}
                         />
                     ))
                 ) : (
@@ -85,38 +83,44 @@ const MenuList = ({ storeId, isOwner = false }) => {
                 )}
             </div>
 
-            {/* 메뉴 추가 버튼 (관리자용) */}
-            {isOwner && (
-                <div className="fixed bottom-20 right-4">
-                    <button
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-14 h-14 bg-blue-500 text-white rounded-full shadow-lg flex items-center justify-center hover:bg-blue-600 transition-colors"
-                    >
-                        <Plus className="w-6 h-6" />
-                    </button>
-                </div>
-            )}
-
-            {/* 메뉴 추가/수정 모달 */}
-            {isModalOpen && (
+            {/* 메뉴 상세 모달 */}
+            {selectedMenu && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-                    <div className="bg-white rounded-lg p-6 w-full max-w-md">
-                        <h2 className="text-lg font-bold mb-4">메뉴 추가/수정</h2>
-                        <form className="space-y-4">
-                            {/* TODO: 폼 필드들 */}
-                        </form>
-                        <div className="mt-6 flex gap-3">
+                    <div className="bg-white rounded-lg w-full max-w-2xl">
+                        <div className="p-4 border-b flex justify-between items-center">
+                            <h2 className="text-xl font-bold">{selectedMenu.name}</h2>
                             <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="flex-1 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                                onClick={() => setSelectedMenu(null)}
+                                className="p-2 hover:bg-gray-100 rounded-full"
                             >
-                                취소
+                                <X className="w-6 h-6" />
                             </button>
-                            <button
-                                className="flex-1 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
-                            >
-                                저장
-                            </button>
+                        </div>
+                        <div className="p-6">
+                            <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-6">
+                                <img
+                                    src={selectedMenu.image || PLACEHOLDER_IMAGE}
+                                    alt={selectedMenu.name}
+                                    className="w-full h-full object-cover"
+                                />
+                            </div>
+                            <div className="space-y-4">
+                                <p className="text-2xl font-bold text-blue-600">
+                                    {Number(selectedMenu.price).toLocaleString()}원
+                                </p>
+                                {selectedMenu.description && (
+                                    <div>
+                                        <h3 className="font-medium text-gray-900 mb-1">설명</h3>
+                                        <p className="text-gray-600">{selectedMenu.description}</p>
+                                    </div>
+                                )}
+                                {selectedMenu.allergies && (
+                                    <div>
+                                        <h3 className="font-medium text-gray-900 mb-1">알레르기 정보</h3>
+                                        <p className="text-red-500">{selectedMenu.allergies}</p>
+                                    </div>
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>

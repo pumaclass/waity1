@@ -1,161 +1,163 @@
-import { useState, useEffect } from 'react';
-import { ChevronDown, Star } from 'lucide-react';
-import { useReview } from '../../hooks/useReview';
-import ReviewCard from './ReviewCard';
+import React, { useState, useEffect } from 'react';
+import { Star } from 'lucide-react';
+import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
+import Rating from '../common/Rating';
+import { PLACEHOLDER_IMAGE } from '../../constants/images';
+
+// ReviewList.jsx의 getImageUrl 함수 수정
+const getImageUrl = (imageUrl) => {
+    if (!imageUrl) return PLACEHOLDER_IMAGE;
+    if (imageUrl.startsWith('http')) return imageUrl;
+    // 환경변수를 사용하여 이미지 URL 생성
+    return `${process.env.REACT_APP_IMAGE_URL}/${imageUrl}`;
+};
 
 const ReviewList = ({ storeId }) => {
-    const { reviews, loading, error, fetchReviews, pagination } = useReview();
-    const [filter, setFilter] = useState('recent'); // recent, highRating, lowRating
+    const [reviews, setReviews] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    const [page, setPage] = useState(0);
+    const [hasMore, setHasMore] = useState(true);
+    const [stats, setStats] = useState({
+        averageRating: 0,
+        totalReviews: 0
+    });
 
     useEffect(() => {
-        if (storeId) {
-            fetchReviews(storeId);
-        }
-    }, [storeId, fetchReviews]);
+        const fetchReviews = async () => {
+            if (!storeId || loading) return;
 
-    const filterButtons = [
-        { id: 'recent', label: '최신순' },
-        { id: 'highRating', label: '높은 평점순' },
-        { id: 'lowRating', label: '낮은 평점순' }
-    ];
+            setLoading(true);
+            try {
+                const response = await fetchAPI(`${API_ENDPOINTS.review.list(storeId)}?page=${page}&size=10`);
+                console.log('Review response:', response);
 
-    const getFilteredReviews = () => {
-        if (!Array.isArray(reviews)) return [];
+                // 첫 페이지일 때만 통계 계산
+                if (page === 0) {
+                    const totalRating = response.content.reduce((sum, review) => sum + review.rating, 0);
+                    setStats({
+                        averageRating: response.totalElements > 0 ? (totalRating / response.content.length).toFixed(1) : 0,
+                        totalReviews: response.totalElements
+                    });
+                }
 
-        let filtered = [...reviews];
-        switch (filter) {
-            case 'highRating':
-                return filtered.sort((a, b) => b.rating - a.rating);
-            case 'lowRating':
-                return filtered.sort((a, b) => a.rating - b.rating);
-            case 'recent':
-            default:
-                return filtered.sort((a, b) =>
-                    new Date(b.createdAt) - new Date(a.createdAt)
+                // 기존 리뷰에 새 리뷰 추가
+                setReviews(prev =>
+                    page === 0 ? response.content : [...prev, ...response.content]
                 );
+                setHasMore(!response.last);
+            } catch (err) {
+                console.error('Failed to fetch reviews:', err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchReviews();
+    }, [storeId, page]);
+
+    const loadMore = () => {
+        if (!loading && hasMore) {
+            setPage(prev => prev + 1);
         }
     };
 
-    if (loading) {
-        return (
-            <div className="flex justify-center items-center py-10">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="p-4 text-center text-red-500">
-                {error}
-            </div>
-        );
-    }
-
     return (
-        <div className="pb-safe">
-            {/* 리뷰 요약 */}
-            <div className="bg-white p-4 border-b">
-                <div className="flex items-start justify-between mb-6">
+        <div className="bg-white">
+            {/* 평점 요약 */}
+            <div className="p-4 border-b">
+                <div className="flex items-center gap-3">
                     <div>
-                        <div className="flex items-center">
-                            <span className="text-3xl font-bold text-gray-900">
-                                {(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length || 0).toFixed(1)}
+                        <div className="flex items-center gap-2">
+                            <Rating
+                                value={Number(stats.averageRating)}
+                                readonly
+                                size="lg"
+                            />
+                            <span className="text-2xl font-bold">
+                                {stats.averageRating}
                             </span>
-                            <div className="flex ml-2">
-                                {[...Array(5)].map((_, i) => (
-                                    <Star
-                                        key={i}
-                                        className={`w-5 h-5 ${
-                                            i < Math.round(reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length)
-                                                ? 'text-yellow-400 fill-current'
-                                                : 'text-gray-300'
-                                        }`}
-                                    />
-                                ))}
-                            </div>
                         </div>
-                        <p className="text-sm text-gray-500 mt-1">
-                            총 {reviews.length}개의 리뷰
-                        </p>
+                        <div className="text-sm text-gray-500 mt-1">
+                            총 {stats.totalReviews}개의 리뷰
+                        </div>
                     </div>
-                    <button className="px-4 py-2 bg-blue-500 text-white rounded-lg text-sm font-medium">
-                        리뷰 작성하기
-                    </button>
-                </div>
-
-                {/* 평점 분포 */}
-                <div className="space-y-2">
-                    {[5, 4, 3, 2, 1].map((rating) => {
-                        const count = reviews.filter(r => Math.round(r.rating) === rating).length;
-                        const percentage = (count / reviews.length) * 100 || 0;
-
-                        return (
-                            <div key={rating} className="flex items-center">
-                                <span className="w-12 text-sm text-gray-600">
-                                    {rating}점
-                                </span>
-                                <div className="flex-1 h-2 bg-gray-200 rounded-full mx-2">
-                                    <div
-                                        className="h-full bg-yellow-400 rounded-full"
-                                        style={{ width: `${percentage}%` }}
-                                    />
-                                </div>
-                                <span className="w-12 text-right text-sm text-gray-500">
-                                    {percentage.toFixed(0)}%
-                                </span>
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* 리뷰 필터 */}
-            <div className="bg-white border-b">
-                <div className="flex overflow-x-auto hide-scrollbar p-2">
-                    {filterButtons.map((filterBtn) => (
-                        <button
-                            key={filterBtn.id}
-                            onClick={() => setFilter(filterBtn.id)}
-                            className={`flex-none px-4 py-2 rounded-full text-sm mr-2 last:mr-0 ${
-                                filter === filterBtn.id
-                                    ? 'bg-blue-500 text-white'
-                                    : 'bg-gray-100 text-gray-700'
-                            }`}
-                        >
-                            {filterBtn.label}
-                        </button>
-                    ))}
                 </div>
             </div>
 
             {/* 리뷰 목록 */}
             <div className="divide-y divide-gray-200">
-                {getFilteredReviews().map((review) => (
-                    <ReviewCard key={review.id} review={review} />
+                {reviews.map((review) => (
+                    <div key={review.id} className="p-4">
+                        <div className="flex justify-between items-start mb-3">
+                            <div>
+                                <div className="flex items-center gap-2">
+                                    <span className="font-medium">{review.nickname}</span>
+                                    <span className="text-sm text-gray-500">
+                                        {new Date(review.createdAt).toLocaleDateString()}
+                                    </span>
+                                </div>
+                                <div className="mt-1">
+                                    <Rating value={review.rating} readonly size="sm" />
+                                </div>
+                            </div>
+                            {review.reservationDate && (
+                                <span className="text-sm text-gray-500">
+                                    방문일: {new Date(review.reservationDate).toLocaleDateString()}
+                                </span>
+                            )}
+                        </div>
+
+                        {review.title && (
+                            <h4 className="font-medium mb-2">{review.title}</h4>
+                        )}
+                        <p className="text-gray-600 whitespace-pre-line">{review.content}</p>
+
+                        {/* 리뷰 이미지 */}
+                        {review.imageUrls && review.imageUrls.length > 0 && (
+                            <div className="mt-3 grid grid-cols-3 gap-2">
+                                {review.imageUrls.map((url, index) => (
+                                    <div key={index} className="aspect-square bg-gray-100 rounded-lg overflow-hidden">
+                                        <img
+                                            src={getImageUrl(url)}
+                                            alt={`리뷰 이미지 ${index + 1}`}
+                                            className="w-full h-full object-cover"
+                                            onError={(e) => {
+                                                e.target.src = PLACEHOLDER_IMAGE;
+                                            }}
+                                        />
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+                    </div>
                 ))}
-            </div>
 
-            {/* 더보기 버튼 */}
-            {pagination?.hasNext && (
-                <div className="p-4 text-center">
+                {/* 로딩 상태 */}
+                {loading && (
+                    <div className="p-4 text-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto" />
+                    </div>
+                )}
+
+                {/* 더보기 버튼 */}
+                {hasMore && !loading && (
                     <button
-                        onClick={() => fetchReviews(storeId, pagination.currentPage + 1)}
-                        className="flex items-center justify-center w-full py-3 text-gray-600 hover:text-gray-900"
+                        onClick={loadMore}
+                        className="w-full py-4 text-blue-500 hover:bg-gray-50 font-medium"
                     >
-                        더보기
-                        <ChevronDown className="w-5 h-5 ml-1" />
+                        더 보기
                     </button>
-                </div>
-            )}
+                )}
 
-            {/* 리뷰가 없는 경우 */}
-            {reviews.length === 0 && (
-                <div className="p-8 text-center">
-                    <p className="text-gray-500">아직 작성된 리뷰가 없습니다</p>
-                    <p className="text-sm text-gray-400 mt-2">첫 리뷰를 작성해보세요!</p>
-                </div>
-            )}
+                {/* 빈 상태 */}
+                {!loading && reviews.length === 0 && (
+                    <div className="p-8 text-center text-gray-500">
+                        아직 리뷰가 없습니다.
+                    </div>
+                )}
+            </div>
         </div>
     );
 };

@@ -1,21 +1,39 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, SlidersHorizontal } from 'lucide-react';
-import { useStore } from '../../hooks/useStore';
-import StoreCard from '../../components/store/StoreCard';
+import StoreList from '../../components/store/StoreList';
 import Header from '../../components/common/Header';
+import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
 
 const StoreListPage = () => {
+    const [stores, setStores] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [showFilter, setShowFilter] = useState(false);
-    const { stores, loading, error, fetchStores } = useStore();
     const [selectedCategory, setSelectedCategory] = useState('전체');
 
     const categories = ['전체', '한식', '중식', '일식', '양식', '카페'];
 
-    // fetchStores를 의존성 배열에서 제거
     useEffect(() => {
+        const fetchStores = async () => {
+            setLoading(true);
+            try {
+                const response = await fetchAPI(API_ENDPOINTS.store.list);
+                console.log('Store API Response:', response); // 디버깅용
+
+                if (response.data) {
+                    setStores(response.data);
+                }
+            } catch (err) {
+                console.error('Failed to fetch stores:', err);
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
         fetchStores();
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     const filterStores = (stores) => {
         if (!Array.isArray(stores)) return [];
@@ -30,14 +48,9 @@ const StoreListPage = () => {
         });
     };
 
-    console.log('Current stores:', stores); // 데이터 확인용
-
     return (
         <div className="min-h-screen bg-gray-50">
-            <Header
-                title="체크테이블"
-                showBack={false}
-            />
+            <Header title="웨이티" showBack={false} />
 
             <div className="pt-14">
                 {/* 검색 영역 */}
@@ -82,29 +95,11 @@ const StoreListPage = () => {
                 </div>
 
                 {/* 매장 목록 */}
-                {loading ? (
-                    <div className="flex justify-center items-center h-40">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-                    </div>
-                ) : error ? (
-                    <div className="p-4 text-center text-red-500">
-                        {error}
-                    </div>
-                ) : (
-                    <div className="divide-y divide-gray-200">
-                        {filterStores(stores).map((store) => (
-                            <StoreCard
-                                key={store.id || Math.random()}
-                                store={store}
-                            />
-                        ))}
-                        {filterStores(stores).length === 0 && (
-                            <div className="p-4 text-center text-gray-500">
-                                {searchTerm ? '검색 결과가 없습니다.' : '등록된 매장이 없습니다.'}
-                            </div>
-                        )}
-                    </div>
-                )}
+                <StoreList
+                    stores={filterStores(stores)}
+                    loading={loading}
+                    error={error}
+                />
             </div>
         </div>
     );

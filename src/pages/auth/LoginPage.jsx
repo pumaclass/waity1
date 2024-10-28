@@ -64,7 +64,7 @@ const LoginPage = () => {
                 {/* 헤더 */}
                 <div className="mb-8">
                     <h1 className="text-2xl font-bold text-[#202020]">로그인</h1>
-                    <p className="text-[#808080] mt-2">체크테이블에 오신 것을 환영합니다</p>
+                    <p className="text-[#808080] mt-2">웨이티에서 맛집을 찾아보세요</p>
                 </div>
 
                 {/* 폼 */}

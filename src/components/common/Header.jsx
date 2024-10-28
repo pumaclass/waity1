@@ -1,8 +1,13 @@
 import { ArrowLeft, Menu, X } from 'lucide-react';
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import { useAuthContext } from '../../contexts/AuthContext';
 
-const SideMenu = ({ isOpen, onClose, user }) => {
+// SideMenu 컴포넌트
+const SideMenu = ({ isOpen, onClose }) => {
+    const navigate = useNavigate();
+    const { user, setUser, setIsAuthenticated } = useAuthContext();
+
     const menuItems = [
         { label: '홈', path: '/' },
         { label: '내 정보', path: '/profile' },
@@ -13,12 +18,18 @@ const SideMenu = ({ isOpen, onClose, user }) => {
 
     const ownerMenuItems = [
         { label: '매장 관리', path: '/owner/store' },
-        { label: '메뉴 관리', path: '/owner/menu' },
+        { label: '메뉴 관리', path: '/owner/store/menu' },
         { label: '예약 관리', path: '/owner/reservations' },
     ];
 
     const handleLogout = () => {
-        // 로그아웃 로직
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('refreshToken');
+        localStorage.removeItem('user');
+        setUser(null);
+        setIsAuthenticated(false);
+        navigate('/login');
+        onClose();
     };
 
     return (
@@ -96,10 +107,7 @@ const SideMenu = ({ isOpen, onClose, user }) => {
                 {user && (
                     <div className="border-t absolute bottom-0 left-0 right-0">
                         <button
-                            onClick={() => {
-                                handleLogout();
-                                onClose();
-                            }}
+                            onClick={handleLogout}
                             className="w-full px-4 py-3 text-left text-red-500 hover:bg-red-50"
                         >
                             로그아웃
@@ -111,6 +119,7 @@ const SideMenu = ({ isOpen, onClose, user }) => {
     );
 };
 
+// Header 컴포넌트
 const Header = ({
                     title,
                     showBack = true,
@@ -121,7 +130,7 @@ const Header = ({
                 }) => {
     const navigate = useNavigate();
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const user = null; // useAuth에서 사용자 정보 가져오기
+    const { user } = useAuthContext();
 
     return (
         <div className="relative">
@@ -159,11 +168,12 @@ const Header = ({
             </header>
 
             {/* 사이드 메뉴 */}
-            <SideMenu
-                isOpen={isMenuOpen}
-                onClose={() => setIsMenuOpen(false)}
-                user={user}
-            />
+            {isMenuOpen && (
+                <SideMenu
+                    isOpen={isMenuOpen}
+                    onClose={() => setIsMenuOpen(false)}
+                />
+            )}
         </div>
     );
 };

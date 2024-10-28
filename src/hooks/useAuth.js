@@ -38,8 +38,12 @@ export const useAuth = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
 
-            auth.setTokens(data.data.accessToken, data.data.refreshToken);
-            setUser(data.data.user);
+            // "Bearer "를 제거한 후 토큰 저장
+            const accessToken = data.data.accessToken.replace('Bearer ', '');
+            const refreshToken = data.data.refreshToken.replace('Bearer ', '');
+
+            auth.setTokens(accessToken, refreshToken);
+            setUser({ id: data.data.id, email: data.data.email, userNickname: data.data.userNickname });
             setIsAuthenticated(true);
 
             return data;
