@@ -17,8 +17,8 @@ export const SideMenu = ({ isOpen, onClose }) => {
 
     const ownerMenuItems = [
         { label: '매장 관리', path: '/owner/store' },
-        { label: '매장 등록', path: '/owner/stores/create' },
-        { label: '메뉴 등록', path: '/owner/store/menu' },
+        { label: '메뉴 관리', path: '/owner/store/menu' },
+        { label: '웨이팅 관리', path: '/owner/waiting' },  // 경로 수정
         { label: '예약 관리', path: '/owner/reservations' },
     ];
 

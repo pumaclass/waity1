@@ -11,6 +11,8 @@ import MenuManagePage from './pages/menu/MenuManagePage';
 import ReviewManagePage from './pages/review/ReviewManagePage';
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AuthRoute } from './components/route/ProtectedRoutes';
+import WaitingManagePage from './pages/owner/WaitingManagePage';
+
 
 function App() {
     return (
@@ -106,6 +108,17 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <ReviewManagePage />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    <Route
+                        path="/owner/waiting"  // 경로 수정
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <WaitingManagePage />
                                 </Layout>
                             </ProtectedRoute>
                         }

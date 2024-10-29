@@ -30,7 +30,9 @@ export const API_ENDPOINTS = {
         add: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings`,
         cancel: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings`,
         list: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/list`,
-        complete: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/poll`,
+        check: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings`,
+        ownerList: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/list`,
+        poll: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/poll`,
         clear: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/clear`,
     },
     review: {
