@@ -1,6 +1,7 @@
 // src/hooks/useWaiting.jsx
 import { useState } from 'react';
 import { API_ENDPOINTS, fetchAPI } from '../constants/api';
+import { EventSourcePolyfill, NativeEventSource } from "event-source-polyfill";
 
 export const useWaiting = () => {
     const [loading, setLoading] = useState(false);
@@ -12,6 +13,7 @@ export const useWaiting = () => {
             throw new Error('로그인이 필요합니다.');
         }
 
+        const EventSource = EventSourcePolyfill || NativeEventSource 
         const eventSource = new EventSource(
             `${API_ENDPOINTS.waiting.connect(storeId)}`,
             {
