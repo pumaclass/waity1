@@ -6,31 +6,11 @@ import SignupPage from './pages/auth/SignupPage';
 import StoreListPage from './pages/store/StoreListPage';
 import StoreDetailPage from './pages/store/StoreDetailPage';
 import StoreManagePage from './pages/store/StoreManagePage';
+import StoreCreatePage from './pages/store/StoreCreatePage';
 import MenuManagePage from './pages/menu/MenuManagePage';
 import ReviewManagePage from './pages/review/ReviewManagePage';
 import { AuthProvider } from './contexts/AuthContext';
-
-// 보호된 라우트 컴포넌트
-const ProtectedRoute = ({ children }) => {
-    const token = localStorage.getItem('accessToken');
-
-    if (!token) {
-        return <Navigate to="/login" replace />;
-    }
-
-    return children;
-};
-
-// 로그인 전용 라우트 컴포넌트 (로그인했으면 홈으로)
-const AuthRoute = ({ children }) => {
-    const token = localStorage.getItem('accessToken');
-
-    if (token) {
-        return <Navigate to="/" replace />;
-    }
-
-    return children;
-};
+import { ProtectedRoute, AuthRoute } from './components/route/ProtectedRoutes';
 
 function App() {
     return (
@@ -81,6 +61,18 @@ function App() {
                             <ProtectedRoute>
                                 <Layout>
                                     <StoreManagePage />
+                                </Layout>
+                            </ProtectedRoute>
+                        }
+                    />
+
+                    {/* 매장 등록 라우트 */}
+                    <Route
+                        path="/owner/stores/create"
+                        element={
+                            <ProtectedRoute>
+                                <Layout>
+                                    <StoreCreatePage />
                                 </Layout>
                             </ProtectedRoute>
                         }

@@ -39,12 +39,27 @@ export const useAuth = () => {
             const data = await response.json();
             if (!response.ok) throw new Error(data.message);
 
-            // "Bearer "를 제거한 후 토큰 저장
             const accessToken = data.data.accessToken;
             const refreshToken = data.data.refreshToken;
 
+            // 토큰 저장
             auth.setTokens(accessToken, refreshToken);
-            setUser({ id: data.data.id, email: data.data.email, userNickname: data.data.userNickname });
+
+            // 토큰에서 role 가져오기
+            const userRole = auth.getUserRole();
+
+            // 사용자 정보를 localStorage에도 저장
+            const userInfo = {
+                id: data.data.id,
+                email: data.data.email,
+                userNickname: data.data.userNickname,
+                userRole: userRole  // 토큰에서 가져온 role 사용
+            };
+
+            localStorage.setItem('user', JSON.stringify(userInfo));
+
+            // Context 업데이트
+            setUser(userInfo);
             setIsAuthenticated(true);
 
             return data;
@@ -67,7 +82,9 @@ export const useAuth = () => {
                 },
             });
 
+            // 토큰과 사용자 정보 모두 제거
             auth.clearTokens();
+            localStorage.removeItem('user');
             setUser(null);
             setIsAuthenticated(false);
 

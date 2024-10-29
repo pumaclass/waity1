@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8081';
+const API_BASE = 'http://localhost:8080';
 
 export const API_ENDPOINTS = {
     auth: {
@@ -24,6 +24,14 @@ export const API_ENDPOINTS = {
         create: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus`,
         update: (storeId, menuId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus/${menuId}`,
         delete: (storeId, menuId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus/${menuId}`
+    },
+    waiting: {
+        connect: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings/connection`,
+        add: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings`,
+        cancel: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings`,
+        list: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/list`,
+        complete: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/poll`,
+        clear: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/clear`,
     },
     review: {
         list: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
@@ -51,13 +59,13 @@ export const fetchAPI = async (url, options = {}) => {
     });
 
     // 403 에러 처리
-    if (response.status === 403) {
-        // 토큰이 만료되었거나 유효하지 않은 경우
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        throw new Error('인증이 필요합니다.');
-    }
+    // if (response.status === 403) {
+    //     // 토큰이 만료되었거나 유효하지 않은 경우
+    //     localStorage.removeItem('accessToken');
+    //     localStorage.removeItem('refreshToken');
+    //     window.location.href = '/login';
+    //     throw new Error('인증이 필요합니다.');
+    // }
 
     if (!response.ok) {
         throw new Error('API 요청에 실패했습니다.');

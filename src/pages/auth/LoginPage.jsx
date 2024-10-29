@@ -10,9 +10,7 @@ const LoginPage = () => {
     const [formData, setFormData] = useState({
         email: '',
         password: '',
-        adminToken: ''
     });
-    const [isAdmin, setIsAdmin] = useState(false);
     const [errors, setErrors] = useState({});
 
     const validateForm = () => {
@@ -28,10 +26,6 @@ const LoginPage = () => {
             newErrors.password = '비밀번호를 입력해주세요';
         }
 
-        if (isAdmin && !formData.adminToken) {
-            newErrors.adminToken = '관리자 토큰을 입력해주세요';
-        }
-
         return newErrors;
     };
 
@@ -45,11 +39,7 @@ const LoginPage = () => {
         }
 
         try {
-            await login({
-                email: formData.email,
-                password: formData.password,
-                adminToken: isAdmin ? formData.adminToken : undefined
-            });
+            await login(formData);
             navigate('/');
         } catch (error) {
             setErrors({
@@ -86,32 +76,6 @@ const LoginPage = () => {
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
                         error={errors.password}
                     />
-
-                    {/* 관리자 모드 토글 */}
-                    <div className="flex items-center bg-white p-4 rounded-lg border border-[#E0E0E0]">
-                        <input
-                            type="checkbox"
-                            id="admin-mode"
-                            checked={isAdmin}
-                            onChange={(e) => setIsAdmin(e.target.checked)}
-                            className="w-5 h-5 rounded border-[#E0E0E0] text-[#4E93FF] focus:ring-[#4E93FF]"
-                        />
-                        <label htmlFor="admin-mode" className="ml-3 text-sm text-[#404040]">
-                            관리자로 로그인
-                        </label>
-                    </div>
-
-                    {/* 관리자 토큰 입력 */}
-                    {isAdmin && (
-                        <InputField
-                            icon={Lock}
-                            type="password"
-                            placeholder="관리자 토큰을 입력해주세요"
-                            value={formData.adminToken}
-                            onChange={(e) => setFormData({ ...formData, adminToken: e.target.value })}
-                            error={errors.adminToken}
-                        />
-                    )}
 
                     {/* 로그인 유지 & 비밀번호 찾기 */}
                     <div className="flex items-center justify-between">
