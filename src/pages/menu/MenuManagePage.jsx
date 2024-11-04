@@ -1,13 +1,18 @@
-import { useState } from 'react';
-import { useParams } from 'react-router-dom';
+// src/pages/menu/MenuManagePage.jsx
+import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import ImageUpload from '../../components/common/ImageUpload';
 import { useMenu } from '../../hooks/useMenu';
+import { useStore } from '../../hooks/useStore';
 
 const MenuManagePage = () => {
-    const { storeId, menuId } = useParams();
-    const isEditing = Boolean(menuId);
-    const { createMenu, updateMenu, loading } = useMenu();
+    const navigate = useNavigate();
+    const { stores, fetchStores, loading: storeLoading, error: storeError } = useStore();
+    const { loading: menuLoading, createMenu } = useMenu();
+
+    const [initialized, setInitialized] = useState(false);
+    const [selectedStore, setSelectedStore] = useState(null);
 
     const [formData, setFormData] = useState({
         name: '',
@@ -21,32 +26,86 @@ const MenuManagePage = () => {
 
     const categories = ['메인', '사이드', '음료', '디저트'];
 
+    // 초기 데이터 로드
+    useEffect(() => {
+        const initializePage = async () => {
+            if (!initialized) {
+                await fetchStores();
+                setInitialized(true);
+            }
+        };
+        initializePage();
+    }, [initialized, fetchStores]);
+
+    const handleStoreSelect = (store) => {
+        setSelectedStore(store);
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
 
-        const data = {
-            ...formData,
-            price: Number(formData.price)
-        };
+        if (!selectedStore) {
+            alert('매장을 선택해주세요.');
+            return;
+        }
 
         try {
-            if (isEditing) {
-                await updateMenu(storeId, menuId, data);
-            } else {
-                await createMenu(storeId, data);
-            }
-            // 성공 후 뒤로가기
+            const menuData = {
+                ...formData,
+                price: Number(formData.price)
+            };
+
+            await createMenu(selectedStore.id, menuData);
+            navigate('/store/manage');
         } catch (error) {
-            // 에러 처리
+            console.error('메뉴 처리 중 오류 발생:', error);
+            alert(error.message);
         }
     };
 
+    // 매장 선택 화면
+    if (!selectedStore) {
+        return (
+            <div className="min-h-screen bg-gray-50 p-4">
+                <Header title="매장 선택" />
+                <div className="pt-14">
+                    <h2 className="text-lg font-medium mb-4">메뉴를 등록할 매장을 선택해주세요</h2>
+                    {storeLoading ? (
+                        <div className="flex justify-center items-center py-20">
+                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
+                        </div>
+                    ) : storeError ? (
+                        <div className="p-4 text-center text-red-500">
+                            {storeError}
+                        </div>
+                    ) : (
+                        <div className="space-y-4">
+                            {stores.map(store => (
+                                <div
+                                    key={store.id}
+                                    onClick={() => handleStoreSelect(store)}
+                                    className="bg-white p-4 rounded-lg shadow cursor-pointer hover:bg-gray-50"
+                                >
+                                    <h3 className="font-medium">{store.title}</h3>
+                                    <p className="text-sm text-gray-500">{store.address}</p>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    // 메뉴 등록 폼
     return (
         <div className="min-h-screen bg-gray-50">
-            <Header title={isEditing ? "메뉴 수정" : "새 메뉴 추가"} />
-
+            <Header
+                title="새 메뉴 추가"
+                subtitle={selectedStore.title}
+            />
             <div className="pt-14 p-4">
-                <form onSubmit={handleSubmit} className="space-y-6">
+                <form onSubmit={handleSubmit} className="space-y-6 pb-24">
                     {/* 이미지 업로드 */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -60,7 +119,7 @@ const MenuManagePage = () => {
                         />
                     </div>
 
-                    {/* 메뉴 정보 입력 */}
+                    {/* 메뉴 정보 입력 필드들... */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             메뉴 이름
@@ -115,7 +174,7 @@ const MenuManagePage = () => {
                             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="메뉴에 대한 설명을 입력하세요"
-                            rows={4}
+                            rows={3}
                         />
                     </div>
 
@@ -128,31 +187,32 @@ const MenuManagePage = () => {
                             value={formData.allergies}
                             onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="알레르기 유발 성분을 입력하세요"
+                            placeholder="알레르기 정보를 입력하세요 (예: 땅콩, 우유)"
                         />
                     </div>
 
                     <div className="flex items-center">
+                        <label className="block text-sm font-medium text-gray-700 mr-4">
+                            판매 가능 여부
+                        </label>
                         <input
                             type="checkbox"
-                            id="isAvailable"
                             checked={formData.isAvailable}
                             onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
-                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                            className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
-                        <label htmlFor="isAvailable" className="ml-2 text-sm text-gray-700">
-                            현재 주문 가능
-                        </label>
+                        <span className="ml-2 text-sm text-gray-600">
+                            판매 중
+                        </span>
                     </div>
 
-                    {/* 저장 버튼 */}
-                    <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
+                    <div className="pt-4">
                         <button
                             type="submit"
-                            disabled={loading}
-                            className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium disabled:bg-gray-300"
+                            className="w-full py-3 px-4 border border-transparent text-white bg-blue-500 rounded-lg hover:bg-blue-600 focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            disabled={menuLoading || storeLoading}
                         >
-                            {loading ? "저장 중..." : (isEditing ? "메뉴 수정하기" : "메뉴 추가하기")}
+                            {menuLoading ? '저장 중...' : '메뉴 추가'}
                         </button>
                     </div>
                 </form>

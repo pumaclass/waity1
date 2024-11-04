@@ -14,6 +14,7 @@ import { ProtectedRoute, AuthRoute } from './components/route/ProtectedRoutes';
 import WaitingManagePage from './pages/owner/WaitingManagePage';
 
 
+
 function App() {
     return (
         <AuthProvider>
@@ -123,6 +124,10 @@ function App() {
                             </ProtectedRoute>
                         }
                     />
+                    <Route path="/menu/manage/:storeId" element={<MenuManagePage />} />
+                    <Route path="/menu/manage/:storeId/:menuId" element={<MenuManagePage />} />
+                    <Route path="/stores/:storeId/menus/create" element={<MenuManagePage />} />
+                    <Route path="/stores/:storeId/menus/:menuId/edit" element={<MenuManagePage />} />
 
                     {/* 404 페이지 */}
                     <Route
