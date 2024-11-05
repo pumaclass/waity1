@@ -1,4 +1,3 @@
-// src/hooks/useMenu.js
 import { useState, useCallback } from 'react';
 import { API_ENDPOINTS } from '../constants/api';
 
@@ -8,7 +7,11 @@ export const useMenu = () => {
     const [error, setError] = useState(null);
 
     const fetchOwnerMenus = useCallback(async (storeId) => {
-        if (!storeId || loading) {
+        if (!storeId) {
+            return;
+        }
+
+        if (loading) {
             return;
         }
 
@@ -34,7 +37,11 @@ export const useMenu = () => {
 
             const data = await response.json();
             const menuList = data?.data || [];
-            setMenus(menuList);
+
+            setMenus(prev => {
+                const isSame = JSON.stringify(prev) === JSON.stringify(menuList);
+                return isSame ? prev : menuList;
+            });
 
         } catch (err) {
             console.error('Failed to fetch owner menus:', err);
@@ -43,10 +50,14 @@ export const useMenu = () => {
         } finally {
             setLoading(false);
         }
-    }, [loading]);
+    }, []);
 
     const createMenu = useCallback(async (storeId, menuData) => {
-        if (!storeId || loading) {
+        if (!storeId) {
+            return;
+        }
+
+        if (loading) {
             return;
         }
 
@@ -87,7 +98,13 @@ export const useMenu = () => {
     }, [fetchOwnerMenus]);
 
     const updateMenu = useCallback(async (storeId, menuId, menuData) => {
-        if (!storeId || !menuId || loading) return;
+        if (!storeId || !menuId) {
+            return;
+        }
+
+        if (loading) {
+            return;
+        }
 
         setLoading(true);
         setError(null);

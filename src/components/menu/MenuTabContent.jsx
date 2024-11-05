@@ -44,10 +44,20 @@ const MenuTabContent = ({ storeId }) => {
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (storeId) {
-            fetchOwnerMenus(storeId);
-        }
-    }, [storeId, fetchOwnerMenus]);
+        let isSubscribed = true;
+
+        const loadMenus = async () => {
+            if (storeId && isSubscribed) {
+                await fetchOwnerMenus(storeId);
+            }
+        };
+
+        loadMenus();
+
+        return () => {
+            isSubscribed = false;
+        };
+    }, [storeId]);
 
     if (loading) {
         return (
