@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { API_ENDPOINTS, fetchAPI } from '../constants/api';
 import { EventSourcePolyfill, NativeEventSource } from "event-source-polyfill";
+
 export const useWaiting = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+
     const connectWaiting = async (storeId) => {
         const token = localStorage.getItem('accessToken');
         if (!token) {
@@ -18,15 +20,16 @@ export const useWaiting = () => {
                 headers: {
                     'Authorization': token
                 },
-                heartbeatTimeout: 300000,    // 5분으로 증가
-                connectionTimeout: 60000,     // 1분
-                retries: 3,                   // 재시도 횟수
-                reconnectInterval: 3000       // 재연결 간격 3초
+                heartbeatTimeout: 300000,
+                connectionTimeout: 60000,
+                retries: 3,
+                reconnectInterval: 3000
             }
         );
 
         return eventSource;
     };
+
     const addWaiting = async (storeId) => {
         setLoading(true);
         try {
@@ -45,7 +48,7 @@ export const useWaiting = () => {
         setLoading(true);
         try {
             const response = await fetchAPI(API_ENDPOINTS.waiting.check(storeId), {
-                method: 'GET'  // GET으로 변경
+                method: 'GET'
             });
             return response.data.isWaiting;
         } catch (err) {
@@ -67,12 +70,56 @@ export const useWaiting = () => {
             setLoading(false);
         }
     };
+
+    const getWaitingList = async (storeId) => {
+        setLoading(true);
+        try {
+            const response = await fetchAPI(API_ENDPOINTS.waiting.ownerList(storeId), {
+                method: 'GET'
+            });
+            return response.data;
+        } catch (err) {
+            throw new Error('웨이팅 목록 조회에 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const completeFirstWaiting = async (storeId) => {
+        setLoading(true);
+        try {
+            await fetchAPI(API_ENDPOINTS.waiting.poll(storeId), {
+                method: 'POST'
+            });
+        } catch (err) {
+            throw new Error('웨이팅 처리에 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const clearWaitingFromRank = async (storeId, cutline) => {
+        setLoading(true);
+        try {
+            await fetchAPI(`${API_ENDPOINTS.waiting.clear(storeId)}?cutline=${cutline}`, {
+                method: 'DELETE'
+            });
+        } catch (err) {
+            throw new Error('웨이팅 마감 처리에 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
     return {
         loading,
         error,
         connectWaiting,
         addWaiting,
         cancelWaiting,
-        checkWaitingStatus
+        checkWaitingStatus,
+        getWaitingList,
+        completeFirstWaiting,
+        clearWaitingFromRank
     };
 };

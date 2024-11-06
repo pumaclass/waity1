@@ -9,6 +9,8 @@ import Rating from '../../components/common/Rating';
 import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
 import { STORE_PLACEHOLDER } from '../../constants/images';
 import WaitingButton from '../../components/waiting/WaitingButton';
+import StoreBlogNewsModal from '../../components/store/StoreBlogNewsModal';
+
 
 
 const StoreDetailPage = () => {
@@ -18,6 +20,8 @@ const StoreDetailPage = () => {
     const [error, setError] = useState(null);
     const [activeTab, setActiveTab] = useState('menu');
     const [showReservationModal, setShowReservationModal] = useState(false);
+    const [showBlogNewsModal, setShowBlogNewsModal] = useState(false);
+
 
     useEffect(() => {
         const fetchStoreDetail = async () => {
@@ -185,6 +189,18 @@ const StoreDetailPage = () => {
                             리뷰
                         </button>
                         <button
+                            onClick={() => setShowBlogNewsModal(true)}
+                            className={`flex-1 py-4 text-sm font-medium border-b-2 text-gray-500 border-transparent`}
+                        >
+                            방문후기
+                        </button>
+                        {showBlogNewsModal && (
+                            <StoreBlogNewsModal
+                                store={store}
+                                onClose={() => setShowBlogNewsModal(false)}
+                            />
+                        )}
+                        <button
                             onClick={() => setActiveTab('nearby')}
                             className={`flex-1 py-4 text-sm font-medium border-b-2 ${
                                 activeTab === 'nearby'
@@ -200,11 +216,11 @@ const StoreDetailPage = () => {
                 {/* 탭 컨텐츠 */}
                 <div>
                     {activeTab === 'menu' ? (
-                        <MenuList storeId={storeId} isOwner={false} />
+                        <MenuList storeId={storeId} isOwner={false}/>
                     ) : activeTab === 'review' ? (
-                        <ReviewList storeId={storeId} />
+                        <ReviewList storeId={storeId}/>
                     ) : (
-                        <NearbyStores store={store} />
+                        <NearbyStores store={store}/>
                     )}
                 </div>
             </div>

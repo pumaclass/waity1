@@ -5,45 +5,13 @@ export const useMenu = () => {
     const [menus, setMenus] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [lastFetchedStoreId, setLastFetchedStoreId] = useState(null);
-
-    const fetchMenus = useCallback(async (storeId) => {
-        // 이미 해당 storeId의 메뉴를 가져왔다면 스킵
-        if (lastFetchedStoreId === storeId || !storeId || loading) {
-            return;
-        }
-
-        setLoading(true);
-        setError(null);
-
-        try {
-            const token = localStorage.getItem('accessToken');
-            const response = await fetch(API_ENDPOINTS.menu.list(storeId), {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('메뉴 목록을 불러오는데 실패했습니다.');
-            }
-
-            const data = await response.json();
-            setMenus(data.data || []);
-            setLastFetchedStoreId(storeId);
-
-        } catch (err) {
-            console.error('Failed to fetch menus:', err);
-            setError(err.message);
-            setMenus([]);
-        } finally {
-            setLoading(false);
-        }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
     const fetchOwnerMenus = useCallback(async (storeId) => {
-        if (lastFetchedStoreId === storeId || !storeId || loading) {
+        if (!storeId) {
+            return;
+        }
+
+        if (loading) {
             return;
         }
 
@@ -52,9 +20,13 @@ export const useMenu = () => {
 
         try {
             const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('인증 토큰이 없습니다.');
+            }
+
             const response = await fetch(API_ENDPOINTS.menu.ownerList(storeId), {
                 headers: {
-                    'Authorization': `Bearer ${token}`,
+                    'Authorization': token,
                     'Content-Type': 'application/json'
                 }
             });
@@ -64,8 +36,12 @@ export const useMenu = () => {
             }
 
             const data = await response.json();
-            setMenus(data.data || []);
-            setLastFetchedStoreId(storeId);
+            const menuList = data?.data || [];
+
+            setMenus(prev => {
+                const isSame = JSON.stringify(prev) === JSON.stringify(menuList);
+                return isSame ? prev : menuList;
+            });
 
         } catch (err) {
             console.error('Failed to fetch owner menus:', err);
@@ -74,13 +50,104 @@ export const useMenu = () => {
         } finally {
             setLoading(false);
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
+
+    const createMenu = useCallback(async (storeId, menuData) => {
+        if (!storeId) {
+            return;
+        }
+
+        if (loading) {
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(API_ENDPOINTS.menu.create(storeId), {
+                method: 'POST',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: menuData.name,
+                    price: parseInt(menuData.price),
+                    description: menuData.description,
+                    allergies: menuData.allergies ? menuData.allergies.split(',').map(a => a.trim()) : []
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('메뉴 생성에 실패했습니다.');
+            }
+
+            const data = await response.json();
+            await fetchOwnerMenus(storeId);
+            return data;
+
+        } catch (err) {
+            console.error('Failed to create menu:', err);
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchOwnerMenus]);
+
+    const updateMenu = useCallback(async (storeId, menuId, menuData) => {
+        if (!storeId || !menuId) {
+            return;
+        }
+
+        if (loading) {
+            return;
+        }
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(API_ENDPOINTS.menu.update(storeId, menuId), {
+                method: 'PUT',
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    name: menuData.name,
+                    price: parseInt(menuData.price),
+                    description: menuData.description,
+                    allergies: menuData.allergies ? menuData.allergies.split(',').map(a => a.trim()) : []
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('메뉴 수정에 실패했습니다.');
+            }
+
+            const data = await response.json();
+            await fetchOwnerMenus(storeId);
+            return data;
+
+        } catch (err) {
+            console.error('Failed to update menu:', err);
+            setError(err.message);
+            throw err;
+        } finally {
+            setLoading(false);
+        }
+    }, [fetchOwnerMenus]);
 
     return {
         menus,
         loading,
         error,
-        fetchMenus,
-        fetchOwnerMenus
+        fetchOwnerMenus,
+        createMenu,
+        updateMenu
     };
 };

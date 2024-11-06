@@ -20,8 +20,8 @@ export const API_ENDPOINTS = {
     menu: {
         list: (storeId) => `${API_BASE}/api/v1/user/stores/${storeId}/menus`,
         ownerList: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus`,
-        detail: (storeId, menuId) => `${API_BASE}/api/v1/user/stores/${storeId}/menus/${menuId}`,
         create: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus`,
+        detail: (storeId, menuId) => `${API_BASE}/api/v1/user/stores/${storeId}/menus/${menuId}`,
         update: (storeId, menuId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus/${menuId}`,
         delete: (storeId, menuId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus/${menuId}`
     },
@@ -40,6 +40,11 @@ export const API_ENDPOINTS = {
         create: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
         update: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`,
         delete: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`
+    },
+    crawler: {
+        blog: `${API_BASE}/api/v1/crawler/blog`,
+        news: `${API_BASE}/api/v1/crawler/news`,
+        keywords: `${API_BASE}/api/v1/crawler/keywords` // 키워드 생성 엔드포인트 추가
     }
 };
 

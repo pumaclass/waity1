@@ -1,6 +1,26 @@
 import { useState, useEffect } from 'react';
 import StoreCard from './StoreCard';
 
+const OwnerStoreList = ({ stores, onSelect }) => {
+    return (
+        <div className="space-y-4">
+            {stores.map(store => (
+                <div
+                    key={store.id}
+                    onClick={() => onSelect(store)}
+                    className="bg-white p-4 rounded-lg shadow cursor-pointer hover:bg-gray-50 transition-colors"
+                >
+                    <h3 className="font-medium text-lg">{store.title}</h3>
+                    <p className="text-sm text-gray-500 mt-1">{store.address}</p>
+                    <div className="mt-2 text-xs text-gray-500">
+                        영업시간: {store.openTime} - {store.closeTime}
+                    </div>
+                </div>
+            ))}
+        </div>
+    );
+};
+
 const StoreList = ({ stores, loading, error }) => {
     const [filteredStores, setFilteredStores] = useState([]);
     const [sortType, setSortType] = useState('rating'); // rating, distance, review
