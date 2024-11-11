@@ -55,6 +55,7 @@ const SignupPage = () => {
         adminToken: ''
     });
     const [isAdmin, setIsAdmin] = useState(false);
+    const [isOwner, setIsOwner] = useState(false);
     const [errors, setErrors] = useState({});
 
     const validateForm = () => {
@@ -103,12 +104,14 @@ const SignupPage = () => {
             return;
         }
 
+        const userRole = isAdmin ? 'ROLE_ADMIN' : isOwner ? 'ROLE_OWNER' : 'ROLE_USER';
+
         try {
             await signup({
                 email: formData.email,
                 password: formData.password,
                 nickname: formData.nickname,
-                userRole: isAdmin ? 'ROLE_ADMIN' : 'ROLE_USER',
+                userRole: userRole,
                 adminToken: isAdmin ? formData.adminToken : undefined
             });
             navigate('/login');
@@ -169,18 +172,45 @@ const SignupPage = () => {
                         error={errors.nickname}
                     />
 
-                    {/* 관리자 모드 토글 */}
-                    <div className="flex items-center bg-white p-4 rounded-lg border border-[#E0E0E0]">
-                        <input
-                            type="checkbox"
-                            id="admin-mode"
-                            checked={isAdmin}
-                            onChange={(e) => setIsAdmin(e.target.checked)}
-                            className="w-5 h-5 rounded border-[#E0E0E0] text-[#4E93FF] focus:ring-[#4E93FF]"
-                        />
-                        <label htmlFor="admin-mode" className="ml-3 text-sm text-[#404040]">
-                            관리자로 가입
-                        </label>
+                    {/* 역할 선택 */}
+                    <div className="space-y-2">
+                        {/* 점주 체크박스 */}
+                        <div className="flex items-center bg-white p-4 rounded-lg border border-[#E0E0E0]">
+                            <input
+                                type="checkbox"
+                                id="owner-mode"
+                                checked={isOwner}
+                                onChange={(e) => {
+                                    setIsOwner(e.target.checked);
+                                    if (e.target.checked) {
+                                        setIsAdmin(false);
+                                    }
+                                }}
+                                className="w-5 h-5 rounded border-[#E0E0E0] text-[#4E93FF] focus:ring-[#4E93FF]"
+                            />
+                            <label htmlFor="owner-mode" className="ml-3 text-sm text-[#404040]">
+                                점주로 가입
+                            </label>
+                        </div>
+
+                        {/* 관리자 체크박스 */}
+                        <div className="flex items-center bg-white p-4 rounded-lg border border-[#E0E0E0]">
+                            <input
+                                type="checkbox"
+                                id="admin-mode"
+                                checked={isAdmin}
+                                onChange={(e) => {
+                                    setIsAdmin(e.target.checked);
+                                    if (e.target.checked) {
+                                        setIsOwner(false);
+                                    }
+                                }}
+                                className="w-5 h-5 rounded border-[#E0E0E0] text-[#4E93FF] focus:ring-[#4E93FF]"
+                            />
+                            <label htmlFor="admin-mode" className="ml-3 text-sm text-[#404040]">
+                                관리자로 가입
+                            </label>
+                        </div>
                     </div>
 
                     {/* 관리자 토큰 입력 */}

@@ -18,12 +18,12 @@ export const API_ENDPOINTS = {
         delete: (id) => `${API_BASE}/api/v1/owner/stores/${id}`,
     },
     menu: {
-        list: (storeId) => `${API_BASE}/api/v1/user/stores/${storeId}/menus`,
+        list: (storeId) => `${API_BASE}/api/v2/stores/${storeId}/menus`,
         ownerList: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus`,
         create: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus`,
-        detail: (storeId, menuId) => `${API_BASE}/api/v1/user/stores/${storeId}/menus/${menuId}`,
+        detail: (storeId, menuId) => `${API_BASE}/api/v2/stores/${storeId}/menus/${menuId}`,
         update: (storeId, menuId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus/${menuId}`,
-        delete: (storeId, menuId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus/${menuId}`
+        delete: (storeId, menuId) => `${API_BASE}/api/v2/owner/stores/${storeId}/menus/${menuId}`
     },
     waiting: {
         connect: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings/connection`,
@@ -33,19 +33,37 @@ export const API_ENDPOINTS = {
         check: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings`,
         ownerList: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/list`,
         poll: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/poll`,
+        completed: `${API_BASE}/api/v2/user/waitings/completed`,
         clear: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/clear`,
     },
     review: {
         list: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
         create: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
         update: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`,
-        delete: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`
+        delete: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`,
+        userReviews: `${API_BASE}/api/v1/reviews/my`  // 사용자 리뷰 엔드포인트 추가
     },
     crawler: {
         blog: `${API_BASE}/api/v1/crawler/blog`,
         news: `${API_BASE}/api/v1/crawler/news`,
         keywords: `${API_BASE}/api/v1/crawler/keywords` // 키워드 생성 엔드포인트 추가
+    },
+    reservation: {
+        // 사용자 예약 조회
+        list: `${API_BASE}/api/v2/reservations`,
+        // 예약 취소
+        cancel: (storeId, reservationId) =>
+            `${API_BASE}/api/v2/store/${storeId}/reservation/${reservationId}`,
+        // 사장님 예약 관리
+        ownerList: `${API_BASE}/api/v2/reservation-management`,
+        refuse: (reservationId) =>
+            `${API_BASE}/api/v2/reservation-management/${reservationId}/refusal`,
+        apply: (reservationId) =>
+            `${API_BASE}/api/v2/reservation-management/${reservationId}/apply`,
+        complete: (reservationId) =>
+            `${API_BASE}/api/v2/reservation-management/${reservationId}/complete`
     }
+
 };
 
 // API 요청을 위한 헬퍼 함수

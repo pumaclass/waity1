@@ -11,7 +11,7 @@ export const SideMenu = ({ isOpen, onClose }) => {
         { label: '홈', path: '/' },
         { label: '내 정보', path: '/profile' },
         { label: '예약 내역', path: '/reservations' },
-        { label: '리뷰 관리', path: '/reviews' },
+        { label: '리뷰 관리', path: '/user/reviews' },
         { label: '설정', path: '/settings' },
     ];
 

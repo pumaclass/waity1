@@ -1,111 +1,120 @@
-import React, { useState, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { useParams, useNavigate } from 'react-router-dom';
 import { Clock, MapPin, Phone, Users, Share2 } from 'lucide-react';
 import Header from '../../components/common/Header';
 import MenuList from '../../components/menu/MenuList';
 import ReviewList from '../../components/review/ReviewList';
 import NearbyStores from '../../components/store/NearbyStores';
 import Rating from '../../components/common/Rating';
-import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
+import { useUserStore } from '../../hooks/useStore';
 import { STORE_PLACEHOLDER } from '../../constants/images';
 import WaitingButton from '../../components/waiting/WaitingButton';
-import StoreBlogNewsModal from '../../components/store/StoreBlogNewsModal';
 
-
-
-const StoreDetailPage = () => {
+const UserStoreDetailPage = () => {
     const { storeId } = useParams();
-    const [store, setStore] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState(null);
+    const navigate = useNavigate();
+    const { store, loading, error, fetchStoreDetail } = useUserStore();
     const [activeTab, setActiveTab] = useState('menu');
-    const [showReservationModal, setShowReservationModal] = useState(false);
-    const [showBlogNewsModal, setShowBlogNewsModal] = useState(false);
+    const [showShareModal, setShowShareModal] = useState(false);
+    const [initialized, setInitialized] = useState(false);
 
-
+    // 초기 데이터 로드 - 한 번만 실행
     useEffect(() => {
-        const fetchStoreDetail = async () => {
-            if (!storeId) return;
+        if (storeId && !initialized) {
+            fetchStoreDetail(storeId);
+            setInitialized(true);
+        }
+    }, [storeId, initialized]); // fetchStoreDetail 제거
 
-            setLoading(true);
-            try {
-                const response = await fetchAPI(API_ENDPOINTS.store.detail(storeId));
-                console.log('Store Detail Response:', response);
-
-                if (response.data) {
-                    setStore(response.data);
-                }
-            } catch (err) {
-                console.error('Failed to fetch store detail:', err);
-                setError(err.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchStoreDetail();
-    }, [storeId]);
-
-    const handleShare = () => {
+    const handleShare = async () => {
         if (navigator.share) {
-            navigator.share({
-                title: store?.title,
-                text: store?.description,
-                url: window.location.href
-            });
+            try {
+                await navigator.share({
+                    title: store?.title,
+                    text: store?.description,
+                    url: window.location.href
+                });
+            } catch (error) {
+                console.error('Error sharing:', error);
+                setShowShareModal(true);
+            }
+        } else {
+            setShowShareModal(true);
         }
     };
 
     if (loading) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-            </div>
-        );
-    }
-
-    if (error) {
-        return (
-            <div className="min-h-screen flex items-center justify-center">
-                <div className="p-4 text-center text-red-500">
-                    {error}
+            <div className="min-h-screen bg-gray-50">
+                <Header title="매장 상세" />
+                <div className="flex justify-center items-center h-[calc(100vh-4rem)]">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
                 </div>
             </div>
         );
     }
 
-    if (!store) return null;
+    if (error || !store) {
+        return (
+            <div className="min-h-screen bg-gray-50">
+                <Header title="매장 상세" />
+                <div className="p-4 text-center text-red-500">
+                    {error || '매장 정보를 찾을 수 없습니다.'}
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-gray-50">
             <Header
                 title={store.title}
                 rightButton={
-                    <button onClick={handleShare} className="p-2 hover:bg-gray-100 rounded-full">
+                    <button
+                        onClick={handleShare}
+                        className="p-2 rounded-full hover:bg-gray-100"
+                    >
                         <Share2 className="w-6 h-6 text-gray-700" />
                     </button>
                 }
             />
 
-            <div className="pb-safe">
+            <div className="pt-14 pb-safe">
                 {/* 매장 이미지 */}
-                <div className="relative aspect-video">
+                <div className="relative aspect-video bg-gray-200">
                     <img
                         src={store.image || STORE_PLACEHOLDER}
                         alt={store.title}
                         className="w-full h-full object-cover"
                     />
+                    {store.isDeleted && (
+                        <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+                            <span className="px-4 py-2 bg-red-500 text-white rounded-lg">
+                                현재 운영하지 않는 매장입니다
+                            </span>
+                        </div>
+                    )}
                 </div>
 
                 {/* 매장 정보 */}
                 <div className="bg-white px-4 py-5">
                     <div className="flex items-center justify-between mb-2">
-                        <h1 className="text-xl font-bold text-gray-900">{store.title}</h1>
+                        <div>
+                            <h1 className="text-xl font-bold text-gray-900">{store.title}</h1>
+                            {store.districtCategory && (
+                                <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mt-1">
+                                    {store.districtCategory.name}
+                                </span>
+                            )}
+                        </div>
                         <div className="flex items-center">
                             <Rating value={store.rating} readonly size="sm" showCount count={store.reviewCount} />
                         </div>
                     </div>
-                    <p className="text-gray-600 text-sm mb-4">{store.description}</p>
+
+                    {store.description && (
+                        <p className="text-gray-600 text-sm mb-4">{store.description}</p>
+                    )}
 
                     <div className="space-y-3">
                         <div className="flex items-center text-gray-600">
@@ -156,13 +165,13 @@ const StoreDetailPage = () => {
                             </div>
                         </div>
                     </div>
-                </div>
 
-                {/* 웨이팅 버튼 추가 */}
-                <div className="flex items-center text-gray-600">
-                    <div className="w-full">
-                        <WaitingButton storeId={storeId} />
-                    </div>
+                    {/* 웨이팅 버튼 */}
+                    {!store.isDeleted && (
+                        <div className="mt-6">
+                            <WaitingButton storeId={storeId} />
+                        </div>
+                    )}
                 </div>
 
                 {/* 탭 메뉴 */}
@@ -189,18 +198,6 @@ const StoreDetailPage = () => {
                             리뷰
                         </button>
                         <button
-                            onClick={() => setShowBlogNewsModal(true)}
-                            className={`flex-1 py-4 text-sm font-medium border-b-2 text-gray-500 border-transparent`}
-                        >
-                            방문후기
-                        </button>
-                        {showBlogNewsModal && (
-                            <StoreBlogNewsModal
-                                store={store}
-                                onClose={() => setShowBlogNewsModal(false)}
-                            />
-                        )}
-                        <button
                             onClick={() => setActiveTab('nearby')}
                             className={`flex-1 py-4 text-sm font-medium border-b-2 ${
                                 activeTab === 'nearby'
@@ -216,16 +213,42 @@ const StoreDetailPage = () => {
                 {/* 탭 컨텐츠 */}
                 <div>
                     {activeTab === 'menu' ? (
-                        <MenuList storeId={storeId} isOwner={false}/>
+                        <MenuList storeId={storeId} isOwner={false} />
                     ) : activeTab === 'review' ? (
-                        <ReviewList storeId={storeId}/>
+                        <ReviewList storeId={storeId} />
                     ) : (
-                        <NearbyStores store={store}/>
+                        <NearbyStores store={store} />
                     )}
                 </div>
             </div>
+
+            {/* 공유하기 모달 */}
+            {showShareModal && (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white rounded-lg max-w-md w-full p-6">
+                        <h3 className="text-lg font-medium mb-4">공유하기</h3>
+                        <div className="flex flex-wrap gap-4">
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(window.location.href);
+                                    setShowShareModal(false);
+                                }}
+                                className="flex-1 p-4 border rounded-lg hover:bg-gray-50"
+                            >
+                                링크 복사
+                            </button>
+                        </div>
+                        <button
+                            onClick={() => setShowShareModal(false)}
+                            className="w-full mt-4 px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
+                        >
+                            닫기
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
 
-export default StoreDetailPage;
+export default UserStoreDetailPage;

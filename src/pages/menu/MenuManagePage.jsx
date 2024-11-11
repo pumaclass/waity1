@@ -1,14 +1,13 @@
-// src/pages/menu/MenuManagePage.jsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import ImageUpload from '../../components/common/ImageUpload';
 import { useMenu } from '../../hooks/useMenu';
-import { useStore } from '../../hooks/useStore';
+import { useOwnerStore } from '../../hooks/useStore';  // 변경된 부분
 
 const MenuManagePage = () => {
     const navigate = useNavigate();
-    const { stores, fetchStores, loading: storeLoading, error: storeError } = useStore();
+    const { stores, fetchStores, loading: storeLoading, error: storeError } = useOwnerStore();  // 변경된 부분
     const { loading: menuLoading, createMenu } = useMenu();
 
     const [initialized, setInitialized] = useState(false);

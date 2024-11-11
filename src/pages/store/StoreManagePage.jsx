@@ -5,12 +5,12 @@ import Header from '../../components/common/Header';
 import StoreSelector from '../../components/store/StoreSelector';
 import MenuTabContent from '../../components/menu/MenuTabContent';
 import WaitingManagement from '../../components/waiting/WaitingManagement';
-import { useStore } from '../../hooks/useStore';
+import { useOwnerStore } from '../../hooks/useStore';  // 변경된 부분
 import { useWaiting } from '../../hooks/useWaiting';
 
 const StoreManagePage = () => {
     const navigate = useNavigate();
-    const { stores, fetchStores, loading: storeLoading, error: storeError } = useStore();
+    const { stores, fetchStores, loading: storeLoading, error: storeError } = useOwnerStore();  // 변경된 부분
     const { getWaitingList } = useWaiting();
 
     const [selectedTab, setSelectedTab] = useState('overview');

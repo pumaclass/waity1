@@ -1,6 +1,6 @@
 import React from 'react';
-import Header from '../../components/common/Header';
-import StoreForm from '../../components/store/StoreForm';
+import Header from '../../../components/common/Header';
+import StoreForm from '../../../components/store/StoreForm';
 
 const StoreCreate = () => {
     return (
