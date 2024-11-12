@@ -13,6 +13,7 @@ import UserReviewPage from './pages/review/UserReviewPage';
 import CreateReviewPage from './pages/review/CreateReviewPage';
 import ReservationHistoryPage from './pages/reservation/ReservationHistoryPage';
 import WaitingManagePage from './pages/waiting/WaitingManagePage';  // 추가
+import StoreSearchPage from './pages/store/StoreSearchPage'
 import { AuthProvider } from './contexts/AuthContext';
 import { ProtectedRoute, AuthRoute } from './components/route/ProtectedRoutes';
 
@@ -27,6 +28,7 @@ function App() {
 
                     {/* 공개 라우트 (로그인 불필요) */}
                     <Route path="/" element={<Layout><UserStoreListPage /></Layout>} />
+                    <Route path="/stores/search" element={<StoreSearchPage />} />
                     <Route path="/stores/:storeId" element={<Layout><UserStoreDetailPage /></Layout>} />
 
                     {/* 사용자 보호 라우트 */}

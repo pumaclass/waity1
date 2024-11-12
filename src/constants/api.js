@@ -9,6 +9,7 @@ export const API_ENDPOINTS = {
         checkEmail: `${API_BASE}/api/v2/auth/email/check`,
         checkNickname: `${API_BASE}/api/v2/auth/nickname/check`,
     },
+    categories: `${API_BASE}/api/categories`,
     store: {
         list: `${API_BASE}/api/v1/user/stores`,
         detail: (id) => `${API_BASE}/api/v1/user/stores/${id}`,
@@ -24,6 +25,10 @@ export const API_ENDPOINTS = {
         detail: (storeId, menuId) => `${API_BASE}/api/v2/stores/${storeId}/menus/${menuId}`,
         update: (storeId, menuId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus/${menuId}`,
         delete: (storeId, menuId) => `${API_BASE}/api/v2/owner/stores/${storeId}/menus/${menuId}`
+    },
+    search: {
+        autocomplete: `${API_BASE}/api/search/autocomplete`,
+        search: `${API_BASE}/api/search`
     },
     waiting: {
         connect: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings/connection`,

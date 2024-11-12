@@ -162,6 +162,33 @@ export const useUserStore = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
+
+    const searchStores = async (keyword, filters = {}) => {
+        try {
+            console.log(API_ENDPOINTS.search.search)
+            // POST 요청으로 keyword와 filters를 RequestBody로 전송
+            const response = await fetchAPI(API_ENDPOINTS.search.search, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    keyword,
+                    filters: {
+                        districtCategories: filters.districtCategories || [],
+                        cuisineCategories: filters.cuisineCategories || []
+                    },
+                    size: 10 // 검색 결과 수 제한
+                })
+            });
+            return response.data.stores;
+        } catch (error) {
+            console.error('Search API Error:', error);
+            throw error;
+        }
+    };
+    
+
     const fetchStores = useCallback(async () => {
         if (loading) return;
         setLoading(true);
@@ -225,6 +252,7 @@ export const useUserStore = () => {
         store,
         loading,
         error,
+        searchStores,
         fetchStores,
         fetchStoreDetail,
         setStore
