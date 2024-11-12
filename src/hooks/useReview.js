@@ -11,6 +11,7 @@ export const useReview = () => {
         hasNext: false
     });
 
+    // 메뉴별 리뷰 목록 조회
     const fetchReviews = useCallback(async (menuId, page = 0) => {
         if (!menuId) return;
 
@@ -18,9 +19,14 @@ export const useReview = () => {
         setError(null);
 
         try {
-            const response = await fetch(`${API_ENDPOINTS.review.list(menuId)}?page=${page}`, {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('인증 토큰이 없습니다.');
+            }
+
+            const response = await fetch(`${API_ENDPOINTS.review.list(menuId)}?page=${page}&size=10`, {
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
+                    'Authorization': token,
                     'Content-Type': 'application/json'
                 }
             });
@@ -30,35 +36,113 @@ export const useReview = () => {
             }
 
             const data = await response.json();
-            const reviewData = data.data || { content: [] };
 
-            setReviews(prev => page === 0 ? reviewData.content : [...prev, ...reviewData.content]);
+            if (!data || !data.content) {
+                setReviews([]);
+                setPagination({
+                    currentPage: 0,
+                    totalPages: 0,
+                    hasNext: false
+                });
+                return;
+            }
+
+            setReviews(prev => page === 0 ? data.content : [...prev, ...data.content]);
             setPagination({
-                currentPage: reviewData.number || 0,
-                totalPages: reviewData.totalPages || 0,
-                hasNext: !reviewData.last
+                currentPage: data.number || 0,
+                totalPages: data.totalPages || 0,
+                hasNext: !data.last
             });
 
         } catch (err) {
             console.error('Failed to fetch reviews:', err);
             setError(err.message);
+            setReviews([]);
         } finally {
             setLoading(false);
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
+    // 사용자의 리뷰 목록 조회
+    const fetchUserReviews = useCallback(async (page = 0) => {
+        setLoading(true);
+        setError(null);
+
+        try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('인증 토큰이 없습니다.');
+            }
+
+            const response = await fetch(`${API_ENDPOINTS.review.userReviews}?page=${page}&size=10`, {
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('리뷰 목록을 불러오는데 실패했습니다.');
+            }
+
+            const data = await response.json();
+
+            if (!data || !data.content) {
+                setReviews([]);
+                setPagination({
+                    currentPage: 0,
+                    totalPages: 0,
+                    hasNext: false
+                });
+                return;
+            }
+
+            setReviews(prev => page === 0 ? data.content : [...prev, ...data.content]);
+            setPagination({
+                currentPage: data.number || 0,
+                totalPages: data.totalPages || 0,
+                hasNext: !data.last
+            });
+
+        } catch (err) {
+            console.error('Failed to fetch user reviews:', err);
+            setError(err.message);
+            setReviews([]);
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    // 리뷰 생성
     const createReview = useCallback(async (menuId, reviewData) => {
         setLoading(true);
         setError(null);
 
         try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('인증 토큰이 없습니다.');
+            }
+
+            const formData = new FormData();
+            formData.append('title', reviewData.title);
+            formData.append('content', reviewData.content);
+            formData.append('rating', reviewData.rating);
+
+            if (reviewData.images) {
+                reviewData.images.forEach(image => {
+                    if (image instanceof File) {
+                        formData.append('images', image);
+                    }
+                });
+            }
+
             const response = await fetch(API_ENDPOINTS.review.create(menuId), {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': token
                 },
-                body: JSON.stringify(reviewData)
+                body: formData
             });
 
             if (!response.ok) {
@@ -66,7 +150,7 @@ export const useReview = () => {
             }
 
             const data = await response.json();
-            return data.data;
+            return data;
         } catch (err) {
             console.error('Failed to create review:', err);
             setError(err.message);
@@ -74,28 +158,45 @@ export const useReview = () => {
         } finally {
             setLoading(false);
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
-    const updateReview = useCallback(async (reviewId, reviewData) => {
+    // 리뷰 수정
+    const updateReview = useCallback(async (reviewId, updateDto) => {
         setLoading(true);
         setError(null);
 
         try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('인증 토큰이 없습니다.');
+            }
+
+            const formData = new FormData();
+            formData.append('title', updateDto.title);
+            formData.append('content', updateDto.content);
+            formData.append('rating', updateDto.rating);
+
+            if ('newImages' in updateDto && updateDto.newImages && updateDto.newImages.length > 0) {
+                updateDto.newImages.forEach(image => {
+                    formData.append('newImages', image);
+                });
+            }
+
             const response = await fetch(API_ENDPOINTS.review.update(reviewId), {
                 method: 'PUT',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`,
-                    'Content-Type': 'application/json'
+                    'Authorization': token
                 },
-                body: JSON.stringify(reviewData)
+                body: formData
             });
 
             if (!response.ok) {
-                throw new Error('리뷰 수정에 실패했습니다.');
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || '리뷰 수정에 실패했습니다.');
             }
 
             const data = await response.json();
-            return data.data;
+            return data;
         } catch (err) {
             console.error('Failed to update review:', err);
             setError(err.message);
@@ -103,17 +204,24 @@ export const useReview = () => {
         } finally {
             setLoading(false);
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
+    // 리뷰 삭제
     const deleteReview = useCallback(async (reviewId) => {
         setLoading(true);
         setError(null);
 
         try {
+            const token = localStorage.getItem('accessToken');
+            if (!token) {
+                throw new Error('인증 토큰이 없습니다.');
+            }
+
             const response = await fetch(API_ENDPOINTS.review.delete(reviewId), {
                 method: 'DELETE',
                 headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
                 }
             });
 
@@ -127,7 +235,7 @@ export const useReview = () => {
         } finally {
             setLoading(false);
         }
-    }, []); // eslint-disable-line react-hooks/exhaustive-deps
+    }, []);
 
     return {
         reviews,
@@ -135,8 +243,11 @@ export const useReview = () => {
         error,
         pagination,
         fetchReviews,
+        fetchUserReviews,  // 함수 다시 추가
         createReview,
         updateReview,
         deleteReview
     };
 };
+
+export default useReview;
