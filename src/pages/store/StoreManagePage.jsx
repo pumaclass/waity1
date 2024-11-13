@@ -1,16 +1,16 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Settings, ChevronRight, Clock, Users } from 'lucide-react';
+import { Settings } from 'lucide-react';
 import Header from '../../components/common/Header';
 import StoreSelector from '../../components/store/StoreSelector';
 import MenuTabContent from '../../components/menu/MenuTabContent';
 import WaitingManagement from '../../components/waiting/WaitingManagement';
-import { useOwnerStore } from '../../hooks/useStore';  // 변경된 부분
+import { useOwnerStore } from '../../hooks/useStore';
 import { useWaiting } from '../../hooks/useWaiting';
 
 const StoreManagePage = () => {
     const navigate = useNavigate();
-    const { stores, fetchStores, loading: storeLoading, error: storeError } = useOwnerStore();  // 변경된 부분
+    const { stores, fetchStores, loading: storeLoading, error: storeError } = useOwnerStore();
     const { getWaitingList } = useWaiting();
 
     const [selectedTab, setSelectedTab] = useState('overview');
@@ -23,16 +23,14 @@ const StoreManagePage = () => {
     });
 
     useEffect(() => {
-        if (!stores.length) {
-            fetchStores();
-        }
+        fetchStores();
     }, []);
 
     // 웨이팅 통계 조회
     useEffect(() => {
-        const fetchWaitingStats = async () => {
-            if (!selectedStore) return;
+        if (!selectedStore) return;
 
+        const fetchWaitingStats = async () => {
             try {
                 const waitingData = await getWaitingList(selectedStore.id);
                 setTodayStats(prev => ({
@@ -46,9 +44,8 @@ const StoreManagePage = () => {
 
         fetchWaitingStats();
         const interval = setInterval(fetchWaitingStats, 10000);
-
         return () => clearInterval(interval);
-    }, [selectedStore]);
+    }, [selectedStore, getWaitingList]);
 
     const tabs = [
         { id: 'overview', label: '개요' },
@@ -57,10 +54,10 @@ const StoreManagePage = () => {
         { id: 'menu', label: '메뉴' }
     ];
 
-    // 매장이 선택되지 않았을 때 보여줄 컴포넌트
+    // 매장이 선택되지 않았을 때의 화면
     if (!selectedStore) {
         return (
-            <div className="min-h-screen bg-gray-50">
+            <div className="relative bg-gray-50">
                 <Header
                     title="매장 관리"
                     rightButton={
@@ -72,7 +69,7 @@ const StoreManagePage = () => {
                         </button>
                     }
                 />
-                <div className="pt-14 p-4">
+                <div className="relative z-0 pt-14 px-4">
                     <StoreSelector
                         stores={stores}
                         selectedStore={selectedStore}
@@ -86,10 +83,9 @@ const StoreManagePage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="relative bg-gray-50">
             <Header
                 title="매장 관리"
-                subtitle={selectedStore.name}
                 rightButton={
                     <button
                         onClick={() => navigate('/settings')}
@@ -99,7 +95,7 @@ const StoreManagePage = () => {
                     </button>
                 }
             />
-            <div className="pt-14">
+            <div className="relative z-0 pt-14">
                 {/* 탭 메뉴 */}
                 <div className="bg-white border-b sticky top-14 z-10">
                     <div className="flex">
@@ -125,56 +121,13 @@ const StoreManagePage = () => {
                 </div>
 
                 {/* 탭 콘텐츠 */}
-                <div>
-                    {selectedTab === 'overview' && (
-                        <div className="p-4 space-y-4">
-                            {/* 오늘의 통계 */}
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-white p-4 rounded-lg shadow-sm">
-                                    <h3 className="text-sm text-gray-500 mb-2">예약</h3>
-                                    <p className="text-2xl font-bold">{todayStats.reservations}</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg shadow-sm">
-                                    <h3 className="text-sm text-gray-500 mb-2">웨이팅</h3>
-                                    <p className="text-2xl font-bold text-blue-600">{todayStats.waiting}</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg shadow-sm">
-                                    <h3 className="text-sm text-gray-500 mb-2">완료</h3>
-                                    <p className="text-2xl font-bold text-green-600">{todayStats.completed}</p>
-                                </div>
-                                <div className="bg-white p-4 rounded-lg shadow-sm">
-                                    <h3 className="text-sm text-gray-500 mb-2">취소</h3>
-                                    <p className="text-2xl font-bold text-red-600">{todayStats.canceled}</p>
-                                </div>
-                            </div>
-
-                            {/* 빠른 링크 */}
-                            <div className="bg-white rounded-lg divide-y shadow-sm">
-                                <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50">
-                                    <div className="flex items-center">
-                                        <Clock className="w-5 h-5 text-gray-400 mr-3" />
-                                        <span>영업 시간 설정</span>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                                </button>
-                                <button className="w-full flex items-center justify-between p-4 hover:bg-gray-50">
-                                    <div className="flex items-center">
-                                        <Users className="w-5 h-5 text-gray-400 mr-3" />
-                                        <span>테이블 관리</span>
-                                    </div>
-                                    <ChevronRight className="w-5 h-5 text-gray-400" />
-                                </button>
-                            </div>
-                        </div>
-                    )}
-
+                <div className="relative z-0">
                     {selectedTab === 'menu' && (
                         <MenuTabContent
                             storeId={selectedStore.id}
                             key={selectedStore.id}
                         />
                     )}
-
                     {selectedTab === 'waiting' && (
                         <WaitingManagement
                             storeId={selectedStore.id}
@@ -184,7 +137,14 @@ const StoreManagePage = () => {
                             }))}
                         />
                     )}
-
+                    {selectedTab === 'overview' && (
+                        <div className="p-4 space-y-4">
+                            {/* Overview 내용 */}
+                            <div className="grid grid-cols-2 gap-4">
+                                {/* 통계 카드들 */}
+                            </div>
+                        </div>
+                    )}
                     {selectedTab === 'reservations' && (
                         <div className="p-4 text-center text-gray-500">
                             준비 중입니다.

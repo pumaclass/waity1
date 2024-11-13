@@ -26,7 +26,6 @@ const MenuList = ({ storeId, isOwner = false }) => {
                 const response = await fetchAPI(endpoint);
                 console.log('Received menu data:', response);
 
-                // response.data에서 메뉴 배열 추출
                 const menuData = response.data || [];
                 setMenus(menuData);
                 setError(null);
@@ -63,7 +62,6 @@ const MenuList = ({ storeId, isOwner = false }) => {
 
     return (
         <div className="pb-safe">
-            {/* 메뉴 목록 */}
             <div className="divide-y divide-gray-200">
                 {menus.length > 0 ? (
                     menus.map((menu) => (
@@ -71,8 +69,8 @@ const MenuList = ({ storeId, isOwner = false }) => {
                             key={menu.id}
                             menu={menu}
                             isOwner={isOwner}
-                            onEdit={() => {}} // 일단 빈 함수로 처리
-                            onDelete={() => {}} // 일단 빈 함수로 처리
+                            onEdit={() => {}}
+                            onDelete={() => {}}
                             onClick={handleMenuClick}
                         />
                     ))
@@ -83,7 +81,6 @@ const MenuList = ({ storeId, isOwner = false }) => {
                 )}
             </div>
 
-            {/* 메뉴 상세 모달 */}
             {selectedMenu && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
                     <div className="bg-white rounded-lg w-full max-w-2xl">
@@ -99,9 +96,12 @@ const MenuList = ({ storeId, isOwner = false }) => {
                         <div className="p-6">
                             <div className="aspect-video bg-gray-100 rounded-lg overflow-hidden mb-6">
                                 <img
-                                    src={selectedMenu.image || PLACEHOLDER_IMAGE}
+                                    src={selectedMenu.imageUrl || PLACEHOLDER_IMAGE}
                                     alt={selectedMenu.name}
                                     className="w-full h-full object-cover"
+                                    onError={(e) => {
+                                        e.target.src = PLACEHOLDER_IMAGE;
+                                    }}
                                 />
                             </div>
                             <div className="space-y-4">
@@ -117,7 +117,7 @@ const MenuList = ({ storeId, isOwner = false }) => {
                                 {selectedMenu.allergies && (
                                     <div>
                                         <h3 className="font-medium text-gray-900 mb-1">알레르기 정보</h3>
-                                        <p className="text-red-500">{selectedMenu.allergies}</p>
+                                        <p className="text-red-500">{selectedMenu.allergies.join(', ')}</p>
                                     </div>
                                 )}
                             </div>

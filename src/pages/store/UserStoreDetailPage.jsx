@@ -4,6 +4,7 @@ import { Clock, MapPin, Phone, Users, Share2 } from 'lucide-react';
 import Header from '../../components/common/Header';
 import MenuList from '../../components/menu/MenuList';
 import ReviewList from '../../components/review/ReviewList';
+import StoreBlogNews from '../../components/store/StoreBlogNewsModal';
 import NearbyStores from '../../components/store/NearbyStores';
 import Rating from '../../components/common/Rating';
 import { useUserStore } from '../../hooks/useStore';
@@ -18,13 +19,12 @@ const UserStoreDetailPage = () => {
     const [showShareModal, setShowShareModal] = useState(false);
     const [initialized, setInitialized] = useState(false);
 
-    // 초기 데이터 로드 - 한 번만 실행
     useEffect(() => {
         if (storeId && !initialized) {
             fetchStoreDetail(storeId);
             setInitialized(true);
         }
-    }, [storeId, initialized]); // fetchStoreDetail 제거
+    }, [storeId, initialized]);
 
     const handleShare = async () => {
         if (navigator.share) {
@@ -198,6 +198,16 @@ const UserStoreDetailPage = () => {
                             리뷰
                         </button>
                         <button
+                            onClick={() => setActiveTab('blog')}
+                            className={`flex-1 py-4 text-sm font-medium border-b-2 ${
+                                activeTab === 'blog'
+                                    ? 'text-blue-600 border-blue-600'
+                                    : 'text-gray-500 border-transparent'
+                            }`}
+                        >
+                            방문후기
+                        </button>
+                        <button
                             onClick={() => setActiveTab('nearby')}
                             className={`flex-1 py-4 text-sm font-medium border-b-2 ${
                                 activeTab === 'nearby'
@@ -216,6 +226,8 @@ const UserStoreDetailPage = () => {
                         <MenuList storeId={storeId} isOwner={false} />
                     ) : activeTab === 'review' ? (
                         <ReviewList storeId={storeId} />
+                    ) : activeTab === 'blog' ? (
+                        <StoreBlogNews store={store} />
                     ) : (
                         <NearbyStores store={store} />
                     )}

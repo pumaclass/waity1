@@ -18,7 +18,7 @@ const MenuCard = ({ menu, isOwner, onEdit, onDelete }) => {
         name = '메뉴명 없음',
         price = 0,
         allergies = null,
-        image = null
+        imageUrl = null
     } = menu;
 
     useEffect(() => {
@@ -67,7 +67,7 @@ const MenuCard = ({ menu, isOwner, onEdit, onDelete }) => {
                 {/* 메뉴 이미지 */}
                 <div className="w-24 h-24 flex-shrink-0 bg-gray-100 rounded-lg overflow-hidden">
                     <img
-                        src={image || PLACEHOLDER_IMAGE}
+                        src={imageUrl || PLACEHOLDER_IMAGE}
                         alt={name}
                         className="w-full h-full object-cover"
                         onError={(e) => {

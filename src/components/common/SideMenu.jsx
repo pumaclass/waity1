@@ -1,11 +1,14 @@
-import { useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { X } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
 
 export const SideMenu = ({ isOpen, onClose }) => {
     const navigate = useNavigate();
     const { user, setUser, setIsAuthenticated } = useAuthContext();
+    const [userStores, setUserStores] = useState([]);
+    const [initialized, setInitialized] = useState(false);
 
     const menuItems = [
         { label: '홈', path: '/' },
@@ -15,22 +18,57 @@ export const SideMenu = ({ isOpen, onClose }) => {
         { label: '설정', path: '/settings' },
     ];
 
-    const ownerMenuItems = [
-        { label: '매장 관리', path: '/owner/store' },
-        { label: '매장 등록', path: '/owner/stores/create' },
-        { label: '웨이팅 관리', path: '/owner/waiting' },  // 경로 수정
-        { label: '예약 관리', path: '/owner/reservations' },
-    ];
-
     useEffect(() => {
-        if (!user) {
+        if (!initialized && user) {
             const savedUser = localStorage.getItem('user');
             if (savedUser) {
                 setUser(JSON.parse(savedUser));
                 setIsAuthenticated(true);
             }
+            if (user.userRole === 'ROLE_OWNER') {
+                fetchUserStores();
+            }
+            setInitialized(true);
         }
-    }, [user, setUser, setIsAuthenticated]);
+    }, [user, setUser, setIsAuthenticated, initialized]);
+
+    const fetchUserStores = async () => {
+        try {
+            const response = await fetchAPI(API_ENDPOINTS.store.myStore);
+            console.log('User stores:', response);
+            if (response.data?.content) {
+                setUserStores(response.data.content);
+            }
+        } catch (error) {
+            console.error('Failed to fetch user stores:', error);
+        }
+    };
+
+    const getOwnerMenuItems = () => {
+        const defaultItems = [
+            { label: '매장 관리', path: '/owner/stores' },
+            { label: '매장 등록', path: '/owner/stores/create' },
+        ];
+
+        // 매장이 있는 경우에만 웨이팅/예약 관리 메뉴 추가
+        if (userStores.length > 0) {
+            return [
+                ...defaultItems,
+                {
+                    label: '웨이팅 관리',
+                    path: `/owner/stores/${userStores[0].id}/waiting`,
+                    needsStore: true
+                },
+                {
+                    label: '예약 관리',
+                    path: `/owner/stores/${userStores[0].id}/reservations`,
+                    needsStore: true
+                }
+            ];
+        }
+
+        return defaultItems;
+    };
 
     const handleLogout = () => {
         localStorage.removeItem('accessToken');
@@ -39,6 +77,15 @@ export const SideMenu = ({ isOpen, onClose }) => {
         setUser(null);
         setIsAuthenticated(false);
         navigate('/login');
+        onClose();
+    };
+
+    const handleMenuClick = (item) => {
+        if (item.needsStore && userStores.length === 0) {
+            alert('먼저 매장을 등록해주세요.');
+            return;
+        }
+        navigate(item.path);
         onClose();
     };
 
@@ -84,54 +131,58 @@ export const SideMenu = ({ isOpen, onClose }) => {
                     </div>
                 </div>
 
-                {/* 메뉴 아이템과 로그아웃 버튼 */}
-                <div className="flex flex-col h-full">
-                    <div className="flex-1 overflow-y-auto">
-                        <div className="py-2">
-                            {menuItems.map((item) => (
-                                <Link
-                                    key={item.path}
-                                    to={item.path}
-                                    className="flex px-4 py-3 text-gray-700 hover:bg-gray-100"
-                                    onClick={onClose}
-                                >
-                                    {item.label}
-                                </Link>
-                            ))}
+                {/* 메뉴 아이템 */}
+                <div className="flex-1 overflow-y-auto">
+                    {/* 일반 메뉴 */}
+                    <div className="py-2">
+                        {menuItems.map((item) => (
+                            <button
+                                key={item.path}
+                                onClick={() => handleMenuClick(item)}
+                                className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100"
+                            >
+                                {item.label}
+                            </button>
+                        ))}
 
-                            {/* 사장님 메뉴 */}
-                            {user?.userRole === 'ROLE_OWNER' && (
-                                <>
-                                    <div className="my-2 border-t border-gray-200" />
-                                    <p className="px-4 py-2 text-sm text-gray-500">사장님 메뉴</p>
-                                    {ownerMenuItems.map((item) => (
-                                        <Link
-                                            key={item.path}
-                                            to={item.path}
-                                            className="flex px-4 py-3 text-gray-700 hover:bg-gray-100"
-                                            onClick={onClose}
-                                        >
-                                            {item.label}
-                                        </Link>
-                                    ))}
-                                </>
-                            )}
-                        </div>
-
-                        {/* 로그아웃 버튼 위치 */}
-                        {user && (
-                            <div className="my-2 border-t border-gray-200">
-                                <button
-                                    onClick={handleLogout}
-                                    className="w-full px-4 py-4 text-left text-red-500 hover:bg-red-50 font-medium"
-                                >
-                                    로그아웃
-                                </button>
-                            </div>
+                        {/* 일반 유저의 경우 설정 메뉴 다음에 로그아웃 표시 */}
+                        {user && user.userRole !== 'ROLE_OWNER' && (
+                            <button
+                                onClick={handleLogout}
+                                className="w-full px-4 py-3 text-left text-red-500 hover:bg-red-50"
+                            >
+                                로그아웃
+                            </button>
                         )}
                     </div>
+
+                    {/* 사장님 메뉴 */}
+                    {user?.userRole === 'ROLE_OWNER' && (
+                        <>
+                            <div className="my-2 border-t border-gray-200" />
+                            <p className="px-4 py-2 text-sm text-gray-500">사장님 메뉴</p>
+                            {getOwnerMenuItems().map((item) => (
+                                <button
+                                    key={item.path}
+                                    onClick={() => handleMenuClick(item)}
+                                    className="w-full px-4 py-3 text-left text-gray-700 hover:bg-gray-100"
+                                >
+                                    {item.label}
+                                </button>
+                            ))}
+                            {/* 사장님의 경우 예약 관리 메뉴 다음에 로그아웃 표시 */}
+                            <button
+                                onClick={handleLogout}
+                                className="w-full px-4 py-3 text-left text-red-500 hover:bg-red-50"
+                            >
+                                로그아웃
+                            </button>
+                        </>
+                    )}
                 </div>
             </div>
         </div>
     );
 };
+
+export default SideMenu;

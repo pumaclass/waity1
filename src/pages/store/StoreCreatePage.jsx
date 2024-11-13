@@ -1,12 +1,17 @@
 import React from 'react';
+import Header from '../../components/common/Header';
 import StoreForm from '../../components/store/StoreForm';
 
 const StoreCreatePage = () => {
     return (
-        <div className="min-h-screen bg-gray-50">
-            <div className="pt-14">
+        <div className="relative bg-gray-50">
+            <Header
+                title="매장 등록"
+                showBack={true}
+            />
+            <main className="relative z-0 pt-14">
                 <StoreForm />
-            </div>
+            </main>
         </div>
     );
 };

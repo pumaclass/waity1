@@ -79,7 +79,7 @@ const MenuTabContent = ({ storeId }) => {
         <div className="p-4">
             <div className="flex justify-end mb-4">
                 <button
-                    onClick={() => navigate(`/stores/${storeId}/menus/create`)}
+                    onClick={() => navigate(`/owner/stores/${storeId}/menus/create`)}  // 'owner/' 추가
                     className="flex items-center gap-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
                 >
                     <Plus className="w-4 h-4" />

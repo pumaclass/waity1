@@ -75,18 +75,31 @@ export const API_ENDPOINTS = {
 export const fetchAPI = async (url, options = {}) => {
     const token = localStorage.getItem('accessToken');
 
-    const defaultHeaders = {
-        'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `${token}` } : {})
-    };
+    try {
+        const response = await fetch(url, {
+            ...options,
+            headers: {
+                ...(!(options.body instanceof FormData) && {
+                    'Content-Type': 'application/json'
+                }),
+                ...(token && { 'Authorization': `${token}` }),
+                ...options.headers
+            }
+        });
 
-    const response = await fetch(url, {
-        ...options,
-        headers: {
-            ...defaultHeaders,
-            ...options.headers
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Server Error:', errorData);
+            throw new Error(errorData.message || 'API 요청에 실패했습니다.');
         }
-    });
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+    }
+};
 
     // 403 에러 처리
     // if (response.status === 403) {
@@ -97,9 +110,3 @@ export const fetchAPI = async (url, options = {}) => {
     //     throw new Error('인증이 필요합니다.');
     // }
 
-    if (!response.ok) {
-        throw new Error('API 요청에 실패했습니다.');
-    }
-
-    return response.json();
-};

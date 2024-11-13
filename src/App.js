@@ -1,6 +1,5 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
-import Layout from './components/common/Layout';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import UserStoreListPage from './pages/store/UserStoreListPage';
@@ -27,38 +26,39 @@ function App() {
                     <Route path="/signup" element={<AuthRoute><SignupPage /></AuthRoute>} />
 
                     {/* 공개 라우트 (로그인 불필요) */}
-                    <Route path="/" element={<Layout><UserStoreListPage /></Layout>} />
                     <Route path="/stores/search" element={<StoreSearchPage />} />
                     <Route path="/stores/:storeId" element={<Layout><UserStoreDetailPage /></Layout>} />
+                    <Route path="/" element={<UserStoreListPage />} />
+                    <Route path="/stores/:storeId" element={<UserStoreDetailPage />} />
 
                     {/* 사용자 보호 라우트 */}
                     <Route element={<ProtectedRoute />}>
                         {/* 예약/웨이팅 */}
-                        <Route path="/reservations" element={<Layout><ReservationHistoryPage /></Layout>} />
-                        <Route path="/waiting" element={<Layout><ReservationHistoryPage type="WAIT" /></Layout>} />
+                        <Route path="/reservations" element={<ReservationHistoryPage />} />
+                        <Route path="/waiting" element={<ReservationHistoryPage type="WAIT" />} />
 
                         {/* 리뷰 */}
-                        <Route path="/user/reviews" element={<Layout><UserReviewPage /></Layout>} />
+                        <Route path="/user/reviews" element={<UserReviewPage />} />
                         <Route path="/reviews/create/:storeId" element={<CreateReviewPage />} />
                     </Route>
 
                     {/* 점주 보호 라우트 */}
                     <Route element={<ProtectedRoute />}>
                         {/* 매장 관리 */}
-                        <Route path="/owner/stores" element={<Layout><StoreManagePage /></Layout>} />
-                        <Route path="/owner/stores/create" element={<Layout><StoreCreatePage /></Layout>} />
+                        <Route path="/owner/stores/create" element={<StoreCreatePage />} />
+                        <Route path="/owner/stores" element={<StoreManagePage />} />
 
                         {/* 메뉴 관리 */}
-                        <Route path="/owner/stores/:storeId/menus" element={<Layout><MenuManagePage /></Layout>} />
-                        <Route path="/owner/stores/:storeId/menus/create" element={<Layout><MenuManagePage /></Layout>} />
-                        <Route path="/owner/stores/:storeId/menus/:menuId/edit" element={<Layout><MenuManagePage /></Layout>} />
+                        <Route path="/owner/stores/:storeId/menus" element={<MenuManagePage />} />
+                        <Route path="/owner/stores/:storeId/menus/create" element={<MenuManagePage />} />
+                        <Route path="/owner/stores/:storeId/menus/:menuId/edit" element={<MenuManagePage />} />
 
                         {/* 웨이팅 관리 */}
-                        <Route path="/owner/stores/:storeId/waiting" element={<Layout><WaitingManagePage /></Layout>} />
+                        <Route path="/owner/stores/:storeId/waiting" element={<WaitingManagePage />} />
 
                         {/* 리뷰 관리 */}
-                        <Route path="/owner/reviews" element={<Layout><ReviewManagePage /></Layout>} />
-                        <Route path="/owner/stores/:storeId/reviews" element={<Layout><ReviewManagePage /></Layout>} />
+                        <Route path="/owner/reviews" element={<ReviewManagePage />} />
+                        <Route path="/owner/stores/:storeId/reviews" element={<ReviewManagePage />} />
                     </Route>
 
                     {/* 404 페이지 */}
