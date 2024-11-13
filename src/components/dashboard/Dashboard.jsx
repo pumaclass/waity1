@@ -156,15 +156,15 @@ const Dashboard = ({ ...props }) => {
             for (let date = startMonth; date <= endMonth; date.setMonth(date.getMonth() + 1)) {
                 const formattedMonth = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
 
-                // 해당 월의 총 금액과 수수료 계산
-                const totalAmount = summaryData.filter(item => item.summaryDate.startsWith(formattedMonth))
-                    .reduce((acc, curr) => acc + curr.totalAmount, 0);
-                const totalFee = summaryData.filter(item => item.summaryDate.startsWith(formattedMonth))
-                    .reduce((acc, curr) => acc + curr.totalFee, 0);
-
+                if (idx < summaryData.length && formattedMonth === summaryData[idx].summaryDate) {
+                    amts.push(summaryData[idx].totalAmount);
+                    transactions.push(summaryData[idx].totalFee);
+                    idx++;
+                } else {
+                    amts.push(0);
+                    transactions.push(0);
+                }
                 labels.push(formattedMonth);
-                amts.push(totalAmount);
-                transactions.push(totalFee);
             }
         }
 
