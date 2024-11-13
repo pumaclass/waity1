@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, ExternalLink } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
 
-export default function StoreBlogNewsModal({ store, onClose }) {
+const StoreBlogNews = ({ store }) => {
     const [activeTab, setActiveTab] = useState('blog');
     const [blogResults, setBlogResults] = useState([]);
     const [newsResults, setNewsResults] = useState([]);
@@ -19,62 +19,34 @@ export default function StoreBlogNewsModal({ store, onClose }) {
 
             try {
                 // 1. 키워드 생성
-                let generatedKeywords;
-                try {
-                    const keywordsResponse = await fetchAPI(`${API_ENDPOINTS.crawler.keywords}/${store.id}`);
-                    generatedKeywords = keywordsResponse.data;
-                    setKeywords(generatedKeywords);
-                } catch (error) {
-                    console.error('키워드 생성 실패:', error);
-                    generatedKeywords = [store.title];
-                    setKeywords(generatedKeywords);
-                }
+                const keywordsResponse = await fetchAPI(`${API_ENDPOINTS.crawler.keywords}/${store.id}`);
+                const generatedKeywords = keywordsResponse.data || [store.title];
+                setKeywords(generatedKeywords);
 
                 // 2. 키워드로 검색
                 const allBlogResults = [];
                 const allNewsResults = [];
 
                 for (const keyword of generatedKeywords) {
-                    try {
-                        // URL 파라미터 인코딩 처리
-                        const encodedKeyword = encodeURIComponent(keyword);
-                        const blogUrl = `${API_ENDPOINTS.crawler.blog}?keyword=${encodedKeyword}&page=1`;
-                        const newsUrl = `${API_ENDPOINTS.crawler.news}?keyword=${encodedKeyword}&page=1`;
+                    const encodedKeyword = encodeURIComponent(keyword);
+                    const [blogRes, newsRes] = await Promise.all([
+                        fetchAPI(`${API_ENDPOINTS.crawler.blog}?keyword=${encodedKeyword}&page=1`),
+                        fetchAPI(`${API_ENDPOINTS.crawler.news}?keyword=${encodedKeyword}&page=1`)
+                    ]);
 
-                        console.log('Fetching blog:', blogUrl); // 디버깅용
-                        console.log('Fetching news:', newsUrl); // 디버깅용
-
-                        const [blogRes, newsRes] = await Promise.all([
-                            fetchAPI(blogUrl),
-                            fetchAPI(newsUrl)
-                        ]);
-
-                        if (blogRes?.data) {
-                            console.log(`Blog results for ${keyword}:`, blogRes.data); // 디버깅용
-                            allBlogResults.push(...blogRes.data);
-                        }
-                        if (newsRes?.data) {
-                            console.log(`News results for ${keyword}:`, newsRes.data); // 디버깅용
-                            allNewsResults.push(...newsRes.data);
-                        }
-                    } catch (error) {
-                        console.error(`'${keyword}' 검색 실패:`, error);
-                        // 개별 키워드 검색 실패 시 계속 진행
-                        continue;
-                    }
+                    if (blogRes?.data) allBlogResults.push(...blogRes.data);
+                    if (newsRes?.data) allNewsResults.push(...newsRes.data);
                 }
 
                 // 3. 중복 제거 및 정렬
-                const uniqueBlogResults = Array.from(
-                    new Map(allBlogResults.map(item => [item.link, item])).values()
-                ).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                const uniqueNewsResults = Array.from(
-                    new Map(allNewsResults.map(item => [item.link, item])).values()
-                ).sort((a, b) => new Date(b.date) - new Date(a.date));
-
-                setBlogResults(uniqueBlogResults);
-                setNewsResults(uniqueNewsResults);
+                setBlogResults(
+                    Array.from(new Map(allBlogResults.map(item => [item.link, item])).values())
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                );
+                setNewsResults(
+                    Array.from(new Map(allNewsResults.map(item => [item.link, item])).values())
+                        .sort((a, b) => new Date(b.date) - new Date(a.date))
+                );
 
             } catch (error) {
                 console.error('데이터 조회 실패:', error);
@@ -85,18 +57,14 @@ export default function StoreBlogNewsModal({ store, onClose }) {
         };
 
         fetchKeywordsAndResults();
-    }, [store?.id, store?.title]);
-
-    const handleTabChange = (tab) => {
-        setActiveTab(tab);
-    };
+    }, [store?.id]);
 
     const renderItem = (item) => (
         <a
             href={item.link}
             target="_blank"
             rel="noopener noreferrer"
-            className="block p-4 border-b hover:bg-gray-50 transition-colors"
+            className="block p-4 hover:bg-gray-50 transition-colors"
         >
             <div className="flex gap-4">
                 {item.thumbnail && (
@@ -110,12 +78,8 @@ export default function StoreBlogNewsModal({ store, onClose }) {
                     </div>
                 )}
                 <div className="flex-1 min-w-0">
-                    <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">
-                        {item.title}
-                    </h3>
-                    <p className="text-sm text-gray-500 line-clamp-2 mb-2">
-                        {item.description}
-                    </p>
+                    <h3 className="font-medium text-gray-900 mb-1 line-clamp-2">{item.title}</h3>
+                    <p className="text-sm text-gray-500 line-clamp-2 mb-2">{item.description}</p>
                     <div className="flex items-center text-xs text-gray-400 gap-2">
                         <span>{item.date}</span>
                         <ExternalLink className="w-3 h-3" />
@@ -125,102 +89,76 @@ export default function StoreBlogNewsModal({ store, onClose }) {
         </a>
     );
 
-    if (!store) return null;
-
     return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
-            <div className="bg-white w-full max-w-2xl rounded-lg shadow-xl max-h-[90vh] flex flex-col">
-                {/* 헤더 */}
-                <div className="flex items-center justify-between p-4 border-b">
-                    <div>
-                        <h2 className="text-lg font-medium">{store.title} 관련 정보</h2>
-                        <div className="mt-1 flex flex-wrap gap-1">
-                            {keywords.map((keyword, index) => (
-                                <span
-                                    key={index}
-                                    className="inline-block px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600"
-                                >
-                                    #{keyword}
-                                </span>
-                            ))}
-                        </div>
+        <div className="bg-white">
+            {/* 키워드 섹션 */}
+            <div className="p-4 border-b">
+                <div className="flex flex-wrap gap-1">
+                    {keywords.map((keyword, index) => (
+                        <span
+                            key={index}
+                            className="inline-block px-2 py-1 bg-gray-100 rounded-full text-xs text-gray-600"
+                        >
+                            #{keyword}
+                        </span>
+                    ))}
+                </div>
+            </div>
+
+            {/* 블로그/뉴스 탭 */}
+            <div className="flex border-b">
+                <button
+                    onClick={() => setActiveTab('blog')}
+                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'blog'
+                            ? 'text-blue-600 border-blue-600'
+                            : 'text-gray-500 border-transparent'
+                    }`}
+                >
+                    블로그 ({blogResults.length})
+                </button>
+                <button
+                    onClick={() => setActiveTab('news')}
+                    className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
+                        activeTab === 'news'
+                            ? 'text-blue-600 border-blue-600'
+                            : 'text-gray-500 border-transparent'
+                    }`}
+                >
+                    뉴스 ({newsResults.length})
+                </button>
+            </div>
+
+            {/* 컨텐츠 영역 */}
+            <div>
+                {loading ? (
+                    <div className="flex justify-center items-center py-20">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
                     </div>
-                    <button
-                        onClick={onClose}
-                        className="p-1 hover:bg-gray-100 rounded-full transition-colors"
-                        aria-label="닫기"
-                    >
-                        <X className="w-5 h-5" />
-                    </button>
-                </div>
-
-                {/* 탭 */}
-                <div className="flex border-b">
-                    <button
-                        onClick={() => handleTabChange('blog')}
-                        className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-                            activeTab === 'blog'
-                                ? 'text-blue-600 border-blue-600'
-                                : 'text-gray-500 border-transparent'
-                        }`}
-                    >
-                        블로그 ({blogResults.length})
-                    </button>
-                    <button
-                        onClick={() => handleTabChange('news')}
-                        className={`flex-1 py-3 text-sm font-medium border-b-2 transition-colors ${
-                            activeTab === 'news'
-                                ? 'text-blue-600 border-blue-600'
-                                : 'text-gray-500 border-transparent'
-                        }`}
-                    >
-                        뉴스 ({newsResults.length})
-                    </button>
-                </div>
-
-                {/* 컨텐츠 */}
-                <div className="flex-1 overflow-y-auto">
-                    {loading ? (
-                        <div className="flex items-center justify-center p-8">
-                            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500" />
-                        </div>
-                    ) : error ? (
-                        <div className="p-8 text-center text-red-500">
-                            {error}
-                            <button
-                                onClick={() => window.location.reload()}
-                                className="mt-2 text-sm text-blue-500 hover:underline"
-                            >
-                                다시 시도하기
-                            </button>
-                        </div>
-                    ) : activeTab === 'blog' ? (
-                        blogResults.length > 0 ? (
-                            <div className="divide-y divide-gray-200">
-                                {blogResults.map((item, index) => (
-                                    <div key={index}>{renderItem(item)}</div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="p-8 text-center text-gray-500">
-                                블로그 검색 결과가 없습니다.
-                            </div>
-                        )
-                    ) : (
-                        newsResults.length > 0 ? (
-                            <div className="divide-y divide-gray-200">
-                                {newsResults.map((item, index) => (
-                                    <div key={index}>{renderItem(item)}</div>
-                                ))}
-                            </div>
-                        ) : (
-                            <div className="p-8 text-center text-gray-500">
-                                뉴스 검색 결과가 없습니다.
-                            </div>
-                        )
-                    )}
-                </div>
+                ) : error ? (
+                    <div className="p-8 text-center text-red-500">
+                        {error}
+                        <button
+                            onClick={() => window.location.reload()}
+                            className="mt-2 text-sm text-blue-500 hover:underline block"
+                        >
+                            다시 시도
+                        </button>
+                    </div>
+                ) : (activeTab === 'blog' ? blogResults : newsResults).length > 0 ? (
+                    <div className="divide-y divide-gray-200">
+                        {(activeTab === 'blog' ? blogResults : newsResults).map((item, index) => (
+                            <div key={index}>{renderItem(item)}</div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="p-8 text-center text-gray-500">
+                        {activeTab === 'blog' ? '블로그' : '뉴스'} 검색 결과가 없습니다.
+                    </div>
+                )}
             </div>
         </div>
     );
-}
+};
+
+export default StoreBlogNews;
