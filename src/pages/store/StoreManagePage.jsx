@@ -141,7 +141,9 @@ const StoreManagePage = () => {
                             />
                         )}
                         {selectedTab === 'overview' && (
-                            <Dashboard />
+                            <Dashboard
+                                storeId={selectedStore.id}
+                            />
                         )}
                         {selectedTab === 'reservations' && (
                             <ReservationOwnerList

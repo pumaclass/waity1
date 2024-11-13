@@ -76,6 +76,9 @@ export const API_ENDPOINTS = {
         prepare: `${API_BASE}/api/v2/payment/prepare`,
         success: `${API_BASE}/api/v2/payment/success`,
         fail: `${API_BASE}/api/v2/payment/fail`
+    },
+    settlement: {
+        summary: (storeId) => `${API_BASE}/api/v2/store/${storeId}/settlement/summary`
     }
 };
 
