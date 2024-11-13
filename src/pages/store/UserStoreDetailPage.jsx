@@ -10,6 +10,7 @@ import Rating from '../../components/common/Rating';
 import { useUserStore } from '../../hooks/useStore';
 import { STORE_PLACEHOLDER } from '../../constants/images';
 import WaitingButton from '../../components/waiting/WaitingButton';
+import ReservationButton from "../../components/reservation/ReservationButton";
 
 const UserStoreDetailPage = () => {
     const { storeId } = useParams();
@@ -168,8 +169,13 @@ const UserStoreDetailPage = () => {
 
                     {/* 웨이팅 버튼 */}
                     {!store.isDeleted && (
-                        <div className="mt-6">
-                            <WaitingButton storeId={storeId} />
+                        <div className="mt-3 flex justify-between">
+                            <div className="flex-1 mr-1">
+                                <WaitingButton storeId={storeId}/>
+                            </div>
+                            <div className="flex-1 ml-1">
+                                <ReservationButton storeId={storeId}/>
+                            </div>
                         </div>
                     )}
                 </div>
