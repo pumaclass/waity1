@@ -44,9 +44,19 @@ const StoreForm = ({ initialData }) => {
     
                 setMainCategories(mainCats);
                 setSubCategories(subCats);
+
                 // 기본으로 첫 번째 대분류를 선택하도록 설정
-                setSelectedMainCategory(mainCats[0]);
-                setFormData(prev => ({ ...prev, districtCategoryCode: mainCats[0]?.code }));
+                if (mainCats.length > 0) {
+                    const firstMainCat = mainCats[0];
+                    setSelectedMainCategory(firstMainCat);
+
+                    // 중분류가 없는 경우 대분류 코드로 설정
+                    const hasSubCategories = subCats.some(sub => sub.path.startsWith(firstMainCat.path));
+                    setFormData(prev => ({
+                        ...prev,
+                        districtCategoryCode: hasSubCategories ? '' : firstMainCat.code
+                    }));
+                }
             } catch (err) {
                 console.error("카테고리 불러오기 에러:", err);
             }
@@ -111,6 +121,11 @@ const StoreForm = ({ initialData }) => {
         console.log("sub")
         e.preventDefault();
         if (!validateForm()) return;
+
+        // 중분류가 없는 경우 대분류의 code를 설정
+        if (!selectedSubCategory) {
+            setFormData(prev => ({ ...prev, districtCategoryCode: selectedMainCategory.code }));
+        }
 
         setLoading(true);
 
@@ -249,13 +264,15 @@ const StoreForm = ({ initialData }) => {
                                 ))}
                             </select>
 
-                            {selectedMainCategory && (
+                            {/* 중분류 선택: 중분류가 있는 대분류만 표시 */}
+                            {selectedMainCategory && subCategories.some(sub => sub.path.startsWith(selectedMainCategory.path)) && (
                                 <select
                                     value={selectedSubCategory?.code || ''}
                                     onChange={handleSubCategoryChange}
                                     className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     required
                                 >
+                                    <option value="">중분류 선택</option>
                                     {subCategories
                                         .filter((sub) => sub.path.startsWith(selectedMainCategory.path))
                                         .map((sub) => (
@@ -266,9 +283,9 @@ const StoreForm = ({ initialData }) => {
                         </div>
 
                         {/* 선택된 카테고리 표시 */}
-                        {selectedSubCategory && (
-                            <p className="text-sm text-gray-500 mt-2">선택된 경로: {selectedSubCategory.path}</p>
-                        )}
+                        <p className="text-sm text-gray-500 mt-2">
+                            선택된 경로: {selectedSubCategory ? selectedSubCategory.path : selectedMainCategory?.path}
+                        </p>
                     </div>
 
                     {/* 영업 정보 */}
