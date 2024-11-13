@@ -131,7 +131,6 @@ export const useUserStore = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-
     const searchStores = async (keyword, filters = {}) => {
         try {
             console.log(API_ENDPOINTS.search.search)
@@ -156,14 +155,10 @@ export const useUserStore = () => {
             throw error;
         }
     };
-    
 
     const fetchStores = useCallback(async () => {
         if (loading) return;
-        setLoading(true);
-        setError(null);
 
-    const fetchStores = async () => {
         try {
             setLoading(true);
             const response = await fetchAPI(API_ENDPOINTS.store.list);
@@ -177,7 +172,7 @@ export const useUserStore = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [loading]); // loading을 dependency로 추가
 
     const fetchStoreDetail = async (storeId) => {
         if (!storeId) return;
