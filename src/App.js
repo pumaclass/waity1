@@ -27,7 +27,6 @@ function App() {
 
                     {/* 공개 라우트 (로그인 불필요) */}
                     <Route path="/stores/search" element={<StoreSearchPage />} />
-                    <Route path="/stores/:storeId" element={<Layout><UserStoreDetailPage /></Layout>} />
                     <Route path="/" element={<UserStoreListPage />} />
                     <Route path="/stores/:storeId" element={<UserStoreDetailPage />} />
 
