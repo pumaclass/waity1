@@ -67,8 +67,16 @@ export const API_ENDPOINTS = {
             `${API_BASE}/api/v2/reservation-management/${reservationId}/apply`,
         complete: (reservationId) =>
             `${API_BASE}/api/v2/reservation-management/${reservationId}/complete`
+    },
+    cart: {
+        add: (storeId) => `${API_BASE}/api/v2/store/${storeId}/cart`,
+        list: (storeId) => `${API_BASE}/api/v2/store/${storeId}/cart`
+    },
+    payment: {
+        prepare: `${API_BASE}/api/v2/payment/prepare`,
+        success: `${API_BASE}/api/v2/payment/success`,
+        fail: `${API_BASE}/api/v2/payment/fail`
     }
-
 };
 
 // API 요청을 위한 헬퍼 함수
@@ -100,6 +108,34 @@ export const fetchAPI = async (url, options = {}) => {
         throw error;
     }
 };
+
+// GET 요청을 위한 헬퍼 함수
+export const fetchGET = async (url, options = {}) => {
+    const token = localStorage.getItem('accessToken');
+
+    // 쿼리 파라미터 처리
+    const params = options.params ? new URLSearchParams(options.params).toString() : '';
+    const finalUrl = params ? `${url}?${params}` : url;
+    console.log(finalUrl);
+
+    try {
+        const response = await fetch(finalUrl, {
+            method: 'GET',
+            headers: {
+                ...(token && { 'Authorization': `${token}` }),
+                ...options.headers
+            }
+        });
+
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error('API Error:', error);
+        throw error;
+    }
+};
+
+
 
     // 403 에러 처리
     // if (response.status === 403) {

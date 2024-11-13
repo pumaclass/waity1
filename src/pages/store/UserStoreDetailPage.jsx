@@ -174,7 +174,7 @@ const UserStoreDetailPage = () => {
                                 <WaitingButton storeId={storeId}/>
                             </div>
                             <div className="flex-1 ml-1">
-                                <ReservationButton storeId={storeId}/>
+                                <ReservationButton store={store}/>
                             </div>
                         </div>
                     )}
