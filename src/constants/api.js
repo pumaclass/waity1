@@ -116,7 +116,6 @@ export const fetchGET = async (url, options = {}) => {
     // 쿼리 파라미터 처리
     const params = options.params ? new URLSearchParams(options.params).toString() : '';
     const finalUrl = params ? `${url}?${params}` : url;
-    console.log(finalUrl);
 
     try {
         const response = await fetch(finalUrl, {

@@ -16,7 +16,7 @@ const ReservationButton = ({ store }) => {
     const clientKey = "test_ck_Poxy1XQL8RaXybvzaGLkr7nO5Wml";
     const customerKey = generateRandomString();
     const [payment, setPayment] = useState(null);
-    const [cartList , setCartList] = useState([]);
+    const [totalAmount , setTotalAmount] = useState(0);
 
     useEffect(() => {
         async function fetchPayment() {
@@ -47,18 +47,18 @@ const ReservationButton = ({ store }) => {
     }, [isModalOpen]);
 
 
-    const calculateTotalAmount = (cartList) => {
-        return cartList.reduce((total, item) => {
+    const calculateTotalAmount = (carts) => {
+        return carts.reduce((total, item) => {
             return total + (item.cnt * item.price); // 각 항목의 수량과 가격을 곱하여 총합에 더하기
         }, 0);
     };
 
-    const totalAmount = calculateTotalAmount(cartList); // 총 예약 금액 계산
-
     const getCartInfo = async () => {
         const url = API_ENDPOINTS.cart.list(store.id);
         const response = await fetchGET(url);
-        setCartList(response.data);
+        if (response.status === 200) {
+            setTotalAmount(calculateTotalAmount(response.data));
+        }
     }
 
     const generateAvailableTimes = (openTime, closeTime, turnover) => {
