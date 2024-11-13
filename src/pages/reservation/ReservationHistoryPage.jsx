@@ -117,16 +117,11 @@ const ReservationHistoryPage = () => {
         }
     };
 
-    const getPaymentText = (status, amount) => {
-        switch (status) {
-            case PaymentStatus.COMPLETED:
-                return `${amount?.toLocaleString()}원 결제완료`;
-            case PaymentStatus.PENDING:
-                return '결제대기';
-            case PaymentStatus.CANCELLED:
-                return '결제취소';
-            default:
-                return '결제정보 없음';
+    const getPaymentText = (amount, yn) => {
+        if (yn) {
+            return `${amount.toLocaleString()}원 결제완료`;
+        } else {
+            return "결제정보 없음";
         }
     };
 
@@ -248,11 +243,11 @@ const ReservationHistoryPage = () => {
                                                     대기번호: {reservation.reservationNo}번
                                                 </div>
                                             )}
-                                            {reservation.paymentAmount && (
+                                            {reservation.paymentAmount && reservation.type === ReservationType.RESERVATION && (
                                                 <div className="flex items-center text-sm text-gray-500 mt-1">
                                                     <CreditCard className="w-4 h-4 mr-1" />
                                                     <span className={getPaymentClass(reservation.paymentStatus)}>
-                                                        {getPaymentText(reservation.paymentStatus, reservation.paymentAmount)}
+                                                        {getPaymentText(reservation.paymentAmount, reservation.paymentYN)}
                                                     </span>
                                                 </div>
                                             )}
@@ -265,7 +260,7 @@ const ReservationHistoryPage = () => {
                                     {(reservation.status === ReservationStatus.RESERVATION ||
                                         reservation.status === ReservationStatus.APPLY) && (
                                         <button
-                                            onClick={() => handleCancel(reservation.storeId, reservation.reservationId)}
+                                            onClick={() => handleCancel(reservation.storeId, reservation.reserveId)}
                                             className="w-full mt-2 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100"
                                         >
                                             예약 취소

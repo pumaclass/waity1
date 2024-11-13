@@ -10,6 +10,7 @@ const MenuList = ({ storeId, isOwner = false }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [selectedMenu, setSelectedMenu] = useState(null);
+    const [quantity, setQuantity] = useState(1); // 메뉴 개수를 관리할 상태 추가
 
     useEffect(() => {
         const fetchMenus = async () => {
@@ -44,6 +45,7 @@ const MenuList = ({ storeId, isOwner = false }) => {
     const handleMenuClick = (menu) => {
         const userRole = auth.getUserRole();
         if (userRole === "ROLE_USER") {
+            setQuantity(1);
             setSelectedMenu(menu);
         }
     };
@@ -63,6 +65,53 @@ const MenuList = ({ storeId, isOwner = false }) => {
             </div>
         );
     }
+
+    const increaseQuantity = () => {
+        setQuantity(prev => prev + 1);
+    };
+
+    const decreaseQuantity = () => {
+        setQuantity(prev => Math.max(1, prev - 1)); // 최소 1로 제한
+    };
+
+    // 장바구니에 추가하는 함수 예시
+    const addToCart = async (menu, quantity) => {
+        console.log(`Added ${quantity} of ${menu.id} to cart.`);
+
+        try {
+            setLoading(true);
+
+            const data = {
+                "menus" : [
+                    {
+                        "menuId" : menu.id,
+                        "menuCnt" : quantity
+                    }
+                ]
+            };
+
+            const url = API_ENDPOINTS.cart.add(storeId);
+            const response = await fetchAPI(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization' : auth.getAccessToken()
+                },
+                body: JSON.stringify(data)
+            });
+
+            if (response.status === 200) {
+                console.log(response.message);
+                setSelectedMenu(null);
+                setError(null);
+            }
+        } catch (err) {
+            console.error('Failed to fetch menus:', err);
+            setError(err.message || '메뉴를 불러오는데 실패했습니다.');
+        } finally {
+            setLoading(false);
+        }
+    };
 
     return (
         <div className="pb-safe">
@@ -126,6 +175,38 @@ const MenuList = ({ storeId, isOwner = false }) => {
                                     </div>
                                 )}
                             </div>
+                        </div>
+                        {/* 메뉴 개수 선택 및 장바구니 담기 버튼 추가 */}
+                        <div className="p-4 border-t">
+                            <div className="flex items-center justify-between mb-4">
+                                <label className="font-medium text-gray-900">개수:</label>
+                                <div className="flex items-center">
+                                    <button
+                                        onClick={decreaseQuantity}
+                                        className="p-2 bg-gray-200 rounded-l-md hover:bg-gray-300"
+                                    >
+                                        -
+                                    </button>
+                                    <input
+                                        type="number"
+                                        value={quantity}
+                                        readOnly // 직접 입력 방지
+                                        className="w-16 p-2 border-t border-b border-gray-300 text-center"
+                                    />
+                                    <button
+                                        onClick={increaseQuantity}
+                                        className="p-2 bg-gray-200 rounded-r-md hover:bg-gray-300"
+                                    >
+                                        +
+                                    </button>
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => addToCart(selectedMenu, quantity)} // 장바구니에 추가하는 함수 호출
+                                className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+                            >
+                                장바구니에 담기
+                            </button>
                         </div>
                     </div>
                 </div>

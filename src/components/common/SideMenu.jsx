@@ -51,21 +51,21 @@ export const SideMenu = ({ isOpen, onClose }) => {
         ];
 
         // 매장이 있는 경우에만 웨이팅/예약 관리 메뉴 추가
-        if (userStores.length > 0) {
-            return [
-                ...defaultItems,
-                {
-                    label: '웨이팅 관리',
-                    path: `/owner/stores/${userStores[0].id}/waiting`,
-                    needsStore: true
-                },
-                {
-                    label: '예약 관리',
-                    path: `/owner/stores/${userStores[0].id}/reservations`,
-                    needsStore: true
-                }
-            ];
-        }
+        // if (userStores.length > 0) {
+        //     return [
+        //         ...defaultItems,
+        //         {
+        //             label: '웨이팅 관리',
+        //             path: `/owner/stores/${userStores[0].id}/waiting`,
+        //             needsStore: true
+        //         },
+        //         {
+        //             label: '예약 관리',
+        //             path: `/owner/stores/${userStores[0].id}/reservations`,
+        //             needsStore: true
+        //         }
+        //     ];
+        // }
 
         return defaultItems;
     };
