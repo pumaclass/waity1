@@ -3,6 +3,7 @@ import { X } from 'lucide-react';
 import MenuCard from './MenuCard';
 import { PLACEHOLDER_IMAGE } from '../../constants/images';
 import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
+import { auth } from '../../lib/auth';
 
 const MenuList = ({ storeId, isOwner = false }) => {
     const [menus, setMenus] = useState([]);
@@ -41,7 +42,10 @@ const MenuList = ({ storeId, isOwner = false }) => {
     }, [storeId, isOwner]);
 
     const handleMenuClick = (menu) => {
-        setSelectedMenu(menu);
+        const userRole = auth.getUserRole();
+        if (userRole === "ROLE_USER") {
+            setSelectedMenu(menu);
+        }
     };
 
     if (loading) {
@@ -65,14 +69,15 @@ const MenuList = ({ storeId, isOwner = false }) => {
             <div className="divide-y divide-gray-200">
                 {menus.length > 0 ? (
                     menus.map((menu) => (
-                        <MenuCard
-                            key={menu.id}
-                            menu={menu}
-                            isOwner={isOwner}
-                            onEdit={() => {}}
-                            onDelete={() => {}}
-                            onClick={handleMenuClick}
-                        />
+                        <div onClick={() => {handleMenuClick(menu)}}>
+                            <MenuCard
+                                key={menu.id}
+                                menu={menu}
+                                isOwner={isOwner}
+                                onEdit={() => {}}
+                                onDelete={() => {}}
+                            />
+                        </div>
                     ))
                 ) : (
                     <div className="p-8 text-center text-gray-500">

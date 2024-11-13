@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DaumPostcode from 'react-daum-postcode';
 import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
@@ -25,6 +25,68 @@ const StoreForm = ({ initialData }) => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(initialData?.image || null);
     const [showAddressModal, setShowAddressModal] = useState(false);
+
+    // 카테고리 관련 상태
+    const [mainCategories, setMainCategories] = useState([]);
+    const [subCategories, setSubCategories] = useState([]);
+    const [selectedMainCategory, setSelectedMainCategory] = useState(null);
+    const [selectedSubCategory, setSelectedSubCategory] = useState(null);
+
+    useEffect(() => {
+        const fetchCategories = async () => {
+            try {
+                const response = await fetchAPI(`${API_ENDPOINTS.categories}?type=DISTRICT`, { method: 'GET' });
+                const mainCats = response.data.filter(cat => cat.depth === 1);
+                const subCats = response.data.filter(cat => cat.depth === 2);
+                
+                // 한글 가나다 순으로 정렬
+                subCats.sort((a, b) => a.name.localeCompare(b.name, 'ko'));
+    
+                setMainCategories(mainCats);
+                setSubCategories(subCats);
+
+                // 기본으로 첫 번째 대분류를 선택하도록 설정
+                if (mainCats.length > 0) {
+                    const firstMainCat = mainCats[0];
+                    setSelectedMainCategory(firstMainCat);
+
+                    // 중분류가 없는 경우 대분류 코드로 설정
+                    const hasSubCategories = subCats.some(sub => sub.path.startsWith(firstMainCat.path));
+                    setFormData(prev => ({
+                        ...prev,
+                        districtCategoryCode: hasSubCategories ? '' : firstMainCat.code
+                    }));
+                }
+            } catch (err) {
+                console.error("카테고리 불러오기 에러:", err);
+            }
+        };
+        fetchCategories();
+    }, []);
+
+    const handleMainCategoryChange = (e) => {
+        const mainCategoryCode = e.target.value;
+        const mainCategory = mainCategories.find(cat => cat.code === mainCategoryCode);
+
+        setSelectedMainCategory(mainCategory);
+        setSelectedSubCategory(null); // 중분류 초기화
+
+        // 중분류가 없는 경우 바로 대분류 코드 설정
+        const relatedSubCategories = subCategories.filter(sub => sub.path.startsWith(mainCategory.path));
+        if (relatedSubCategories.length === 0) {
+            setFormData(prev => ({ ...prev, districtCategoryCode: mainCategoryCode }));
+        } else {
+            setFormData(prev => ({ ...prev, districtCategoryCode: '' })); // 초기화
+        }
+    };
+
+    const handleSubCategoryChange = (e) => {
+        const subCategoryCode = e.target.value;
+        const subCategory = subCategories.find(sub => sub.code === subCategoryCode);
+
+        setSelectedSubCategory(subCategory);
+        setFormData(prev => ({ ...prev, districtCategoryCode: subCategoryCode }));
+    };
 
     const handleImageChange = (e) => {
         const file = e.target.files[0];
@@ -56,8 +118,14 @@ const StoreForm = ({ initialData }) => {
     };
 
     const handleSubmit = async (e) => {
+        console.log("sub")
         e.preventDefault();
         if (!validateForm()) return;
+
+        // 중분류가 없는 경우 대분류의 code를 설정
+        if (!selectedSubCategory) {
+            setFormData(prev => ({ ...prev, districtCategoryCode: selectedMainCategory.code }));
+        }
 
         setLoading(true);
 
@@ -98,10 +166,11 @@ const StoreForm = ({ initialData }) => {
                     body: formDataToSend
                 }
             );
-
-            if (response.success) {
+            
+            if (response.status === 200) {
+                console.log("!!")
                 alert('매장이 등록되었습니다.');
-                navigate('/');  // 메인 화면으로 이동
+                navigate('/');
             }
         } catch (error) {
             console.error('Store submission error:', error);
@@ -124,6 +193,10 @@ const StoreForm = ({ initialData }) => {
             alert('예약 가능 테이블 수는 총 테이블 수를 초과할 수 없습니다.');
             return false;
         }
+        if (!formData.districtCategoryCode) {
+            alert('카테고리를 선택해주세요.');
+            return false;
+        }
         return true;
     };
 
@@ -133,9 +206,7 @@ const StoreForm = ({ initialData }) => {
                 <form onSubmit={handleSubmit} className="space-y-6">
                     {/* 이미지 업로드 */}
                     <div className="bg-white rounded-lg shadow p-4">
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                            매장 이미지
-                        </label>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">매장 이미지</label>
                         <div className="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg">
                             <div className="space-y-1 text-center">
                                 {imagePreview ? (
@@ -168,7 +239,6 @@ const StoreForm = ({ initialData }) => {
                     {/* 기본 정보 */}
                     <div className="bg-white rounded-lg shadow p-4 space-y-4">
                         <h3 className="text-lg font-medium">기본 정보</h3>
-
                         <div>
                             <label className="block text-sm font-medium text-gray-700">매장명</label>
                             <input
@@ -180,166 +250,122 @@ const StoreForm = ({ initialData }) => {
                             />
                         </div>
 
+                        {/* 지역 카테고리 선택 */}
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                지역
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700">지역 카테고리 선택</label>
                             <select
-                                value={formData.districtCategoryCode}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    districtCategoryCode: e.target.value
-                                }))}
+                                value={selectedMainCategory?.code || ''}
+                                onChange={handleMainCategoryChange}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                required
                             >
-                                <option value="">지역 선택</option>
-                                {/* 서울 */}
-                                <option value="R123">강남구</option>
-                                <option value="R122">서초구</option>
-                                <option value="R114">마포구</option>
-                                <option value="R113">서대문구</option>
-                                {/* 경기 */}
-                                <option value="R023">고양시</option>
-                                <option value="R024">용인시</option>
-                                <option value="R021">성남시</option>
-                                <option value="R025">부천시</option>
-                                {/* 인천 */}
-                                <option value="R043">미추홀구</option>
-                                <option value="R046">부평구</option>
+                                {mainCategories.map((main) => (
+                                    <option key={main.code} value={main.code}>{main.name}</option>
+                                ))}
                             </select>
+
+                            {/* 중분류 선택: 중분류가 있는 대분류만 표시 */}
+                            {selectedMainCategory && subCategories.some(sub => sub.path.startsWith(selectedMainCategory.path)) && (
+                                <select
+                                    value={selectedSubCategory?.code || ''}
+                                    onChange={handleSubCategoryChange}
+                                    className="mt-2 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                                    required
+                                >
+                                    <option value="">중분류 선택</option>
+                                    {subCategories
+                                        .filter((sub) => sub.path.startsWith(selectedMainCategory.path))
+                                        .map((sub) => (
+                                            <option key={sub.code} value={sub.code}>{sub.name}</option>
+                                        ))}
+                                </select>
+                            )}
                         </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700">설명</label>
-                            <textarea
-                                value={formData.description}
-                                onChange={(e) => setFormData(prev => ({...prev, description: e.target.value}))}
-                                rows={3}
-                                className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-                            />
-                        </div>
+                        {/* 선택된 카테고리 표시 */}
+                        <p className="text-sm text-gray-500 mt-2">
+                            선택된 경로: {selectedSubCategory ? selectedSubCategory.path : selectedMainCategory?.path}
+                        </p>
                     </div>
 
                     {/* 영업 정보 */}
                     <div className="bg-white rounded-lg shadow p-4 space-y-4">
                         <h3 className="text-lg font-medium">영업 정보</h3>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    오픈 시간
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700">오픈 시간</label>
                                 <input
                                     type="time"
                                     value={formData.openTime}
-                                    onChange={(e) => setFormData(prev => ({
-                                        ...prev,
-                                        openTime: e.target.value
-                                    }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, openTime: e.target.value }))}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     required
                                 />
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    마감 시간
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700">마감 시간</label>
                                 <input
                                     type="time"
                                     value={formData.closeTime}
-                                    onChange={(e) => setFormData(prev => ({
-                                        ...prev,
-                                        closeTime: e.target.value
-                                    }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, closeTime: e.target.value }))}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     required
                                 />
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    라스트 오더
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700">라스트 오더</label>
                                 <input
                                     type="time"
                                     value={formData.lastOrder}
-                                    onChange={(e) => setFormData(prev => ({
-                                        ...prev,
-                                        lastOrder: e.target.value
-                                    }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, lastOrder: e.target.value }))}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     required
                                 />
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    평균 식사 시간
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700">평균 식사 시간</label>
                                 <input
                                     type="time"
                                     value={formData.turnover}
-                                    onChange={(e) => setFormData(prev => ({
-                                        ...prev,
-                                        turnover: e.target.value
-                                    }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, turnover: e.target.value }))}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     required
                                 />
                             </div>
                         </div>
-
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    총 테이블 수
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700">총 테이블 수</label>
                                 <input
                                     type="number"
                                     min={1}
                                     value={formData.tableCount}
-                                    onChange={(e) => setFormData(prev => ({
-                                        ...prev,
-                                        tableCount: parseInt(e.target.value)
-                                    }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, tableCount: parseInt(e.target.value) }))}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     required
                                 />
                             </div>
-
                             <div>
-                                <label className="block text-sm font-medium text-gray-700">
-                                    예약 가능 테이블
-                                </label>
+                                <label className="block text-sm font-medium text-gray-700">예약 가능 테이블</label>
                                 <input
                                     type="number"
                                     min={0}
                                     max={formData.tableCount}
                                     value={formData.reservationTableCount}
-                                    onChange={(e) => setFormData(prev => ({
-                                        ...prev,
-                                        reservationTableCount: parseInt(e.target.value)
-                                    }))}
+                                    onChange={(e) => setFormData(prev => ({ ...prev, reservationTableCount: parseInt(e.target.value) }))}
                                     className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                     required
                                 />
                             </div>
                         </div>
-
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                예약금
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700">예약금</label>
                             <input
                                 type="number"
                                 min={0}
                                 step={1000}
                                 value={formData.deposit}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    deposit: parseInt(e.target.value)
-                                }))}
+                                onChange={(e) => setFormData(prev => ({ ...prev, deposit: parseInt(e.target.value) }))}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 required
                             />
@@ -349,23 +375,16 @@ const StoreForm = ({ initialData }) => {
                     {/* 연락처 정보 */}
                     <div className="bg-white rounded-lg shadow p-4 space-y-4">
                         <h3 className="text-lg font-medium">연락처 정보</h3>
-
                         <div>
-                            <label className="block text-sm font-medium text-gray-700">
-                                전화번호
-                            </label>
+                            <label className="block text-sm font-medium text-gray-700">전화번호</label>
                             <input
                                 type="tel"
                                 value={formData.phoneNumber}
-                                onChange={(e) => setFormData(prev => ({
-                                    ...prev,
-                                    phoneNumber: e.target.value
-                                }))}
+                                onChange={(e) => setFormData(prev => ({ ...prev, phoneNumber: e.target.value }))}
                                 className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
                                 required
                             />
                         </div>
-
                         <div>
                             <label className="block text-sm font-medium text-gray-700">주소</label>
                             <div className="mt-1 flex gap-2">
@@ -379,7 +398,7 @@ const StoreForm = ({ initialData }) => {
                                 <button
                                     type="button"
                                     onClick={() => setShowAddressModal(true)}
-                                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
+                                    className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 whitespace-nowrap"
                                 >
                                     주소 찾기
                                 </button>
@@ -429,7 +448,7 @@ const StoreForm = ({ initialData }) => {
                         <div className="p-4 border-t flex justify-end">
                             <button
                                 onClick={() => setShowAddressModal(false)}
-                                className="px-4 py-2 bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+                                className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600"
                             >
                                 닫기
                             </button>
