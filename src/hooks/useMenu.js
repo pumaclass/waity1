@@ -54,22 +54,32 @@ export const useMenu = () => {
 
         try {
             const token = localStorage.getItem('accessToken');
+            const formData = new FormData();
+
+            // 필드별로 FormData에 개별 추가
+            formData.append('name', menuData.name);
+            formData.append('price', Number(menuData.price));
+
+            if (menuData.allergyIds && menuData.allergyIds.length > 0) {
+                menuData.allergyIds.forEach(id => formData.append('allergyIds', id));
+            }
+
+            if (menuData.images?.[0]?.file) {
+                formData.append('image', menuData.images[0].file);
+            }
+
             const response = await fetch(API_ENDPOINTS.menu.create(storeId), {
                 method: 'POST',
                 headers: {
-                    'Authorization': token,
-                    'Content-Type': 'application/json'
+                    'Authorization': token
                 },
-                body: JSON.stringify({
-                    name: menuData.name,
-                    price: parseInt(menuData.price),
-                    description: menuData.description || "",
-                    allergyIds: menuData.allergyIds || []
-                })
+                body: formData
             });
 
             if (!response.ok) {
-                throw new Error('메뉴 생성에 실패했습니다.');
+                const errorData = await response.json();
+                console.error('Server Error Details:', errorData);
+                throw new Error(errorData.message || '메뉴 생성에 실패했습니다.');
             }
 
             const data = await response.json();
@@ -84,6 +94,8 @@ export const useMenu = () => {
             setLoading(false);
         }
     }, [fetchOwnerMenus]);
+
+
 
     const updateMenu = useCallback(async (storeId, menuId, menuData) => {
         if (!storeId || !menuId || loading) return;
