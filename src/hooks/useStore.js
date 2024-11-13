@@ -1,6 +1,8 @@
 // hooks/useStore.js
 import { useState, useCallback } from 'react';
 import { API_ENDPOINTS, fetchAPI } from '../constants/api';
+import { STORE_PLACEHOLDER } from '../constants/images';
+
 
 const isStoreOpen = (openTime, closeTime) => {
     if (!openTime || !closeTime) return false;
@@ -17,12 +19,24 @@ const isStoreOpen = (openTime, closeTime) => {
     return currentTime >= openMinutes && currentTime <= closeMinutes;
 };
 
+const convertImageUrl = (imageUrl) => {
+    if (!imageUrl) return STORE_PLACEHOLDER;
+
+    // S3 URL을 CloudFront URL로 변환
+    if (imageUrl.includes('final17-bucket.s3')) {
+        const key = imageUrl.split('.com/')[1];
+        return `https://d1bmwiwkiumqh6.cloudfront.net/${key}`;
+    }
+
+    return imageUrl;
+};
+
 const processStoreData = (store) => ({
     ...store,
     rating: store.rating || 0,
     reviewCount: store.reviewCount || 0,
     isOpen: isStoreOpen(store.openTime, store.closeTime),
-    image: store.image || '/placeholder-store.jpg',
+    image: convertImageUrl(store.image),  // 이미지 URL 변환 로직 추가
     user: store.userOneResponseDto,
     districtCategory: store.districtCategory || null
 });

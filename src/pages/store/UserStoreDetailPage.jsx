@@ -4,7 +4,7 @@ import { Clock, MapPin, Phone, Users, Share2 } from 'lucide-react';
 import Header from '../../components/common/Header';
 import MenuList from '../../components/menu/MenuList';
 import ReviewList from '../../components/review/ReviewList';
-import StoreBlogNews from '../../components/store/StoreBlogNewsModal';
+import StoreBlogNewsModal from '../../components/store/StoreBlogNewsModal';
 import NearbyStores from '../../components/store/NearbyStores';
 import Rating from '../../components/common/Rating';
 import { useUserStore } from '../../hooks/useStore';
@@ -24,7 +24,14 @@ const UserStoreDetailPage = () => {
             fetchStoreDetail(storeId);
             setInitialized(true);
         }
-    }, [storeId, initialized]);
+    }, [storeId, initialized, fetchStoreDetail]);
+
+    // 디버깅을 위한 useEffect 추가
+    useEffect(() => {
+        if (store) {
+            console.log('Store Data:', store);
+        }
+    }, [store]);
 
     const handleShare = async () => {
         if (navigator.share) {
@@ -65,6 +72,14 @@ const UserStoreDetailPage = () => {
         );
     }
 
+    // store 데이터 구조 로그
+    console.log('Current Store Data:', {
+        id: store.id,
+        title: store.title,
+        image: store.image,
+        description: store.description
+    });
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Header
@@ -86,12 +101,16 @@ const UserStoreDetailPage = () => {
                         src={store.image || STORE_PLACEHOLDER}
                         alt={store.title}
                         className="w-full h-full object-cover"
+                        onError={(e) => {
+                            console.log('Image load failed:', store.image);
+                            e.target.src = STORE_PLACEHOLDER;
+                        }}
                     />
                     {store.isDeleted && (
                         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                            <span className="px-4 py-2 bg-red-500 text-white rounded-lg">
-                                현재 운영하지 않는 매장입니다
-                            </span>
+                           <span className="px-4 py-2 bg-red-500 text-white rounded-lg">
+                               현재 운영하지 않는 매장입니다
+                           </span>
                         </div>
                     )}
                 </div>
@@ -103,8 +122,8 @@ const UserStoreDetailPage = () => {
                             <h1 className="text-xl font-bold text-gray-900">{store.title}</h1>
                             {store.districtCategory && (
                                 <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mt-1">
-                                    {store.districtCategory.name}
-                                </span>
+                                   {store.districtCategory.name}
+                               </span>
                             )}
                         </div>
                         <div className="flex items-center">
@@ -125,8 +144,8 @@ const UserStoreDetailPage = () => {
                                     {store.openTime} - {store.closeTime}
                                     {store.lastOrder && (
                                         <span className="text-red-500">
-                                            <br />라스트오더 {store.lastOrder}
-                                        </span>
+                                           <br />라스트오더 {store.lastOrder}
+                                       </span>
                                     )}
                                 </p>
                             </div>
@@ -140,8 +159,8 @@ const UserStoreDetailPage = () => {
                                     총 {store.tableCount}개 / 예약 가능 {store.reservationTableCount}개
                                     {store.turnover && (
                                         <span className="text-gray-500">
-                                            <br />평균 {store.turnover} 소요
-                                        </span>
+                                           <br />평균 {store.turnover} 소요
+                                       </span>
                                     )}
                                 </p>
                             </div>
@@ -227,7 +246,7 @@ const UserStoreDetailPage = () => {
                     ) : activeTab === 'review' ? (
                         <ReviewList storeId={storeId} />
                     ) : activeTab === 'blog' ? (
-                        <StoreBlogNews store={store} />
+                        <StoreBlogNewsModal store={store} />
                     ) : (
                         <NearbyStores store={store} />
                     )}

@@ -7,13 +7,7 @@ export const useMenu = () => {
     const [error, setError] = useState(null);
 
     const fetchOwnerMenus = useCallback(async (storeId) => {
-        if (!storeId) {
-            return;
-        }
-
-        if (loading) {
-            return;
-        }
+        if (!storeId || loading) return;
 
         setLoading(true);
         setError(null);
@@ -53,13 +47,7 @@ export const useMenu = () => {
     }, []);
 
     const createMenu = useCallback(async (storeId, menuData) => {
-        if (!storeId) {
-            return;
-        }
-
-        if (loading) {
-            return;
-        }
+        if (!storeId || loading) return;
 
         setLoading(true);
         setError(null);
@@ -75,8 +63,8 @@ export const useMenu = () => {
                 body: JSON.stringify({
                     name: menuData.name,
                     price: parseInt(menuData.price),
-                    description: menuData.description,
-                    allergies: menuData.allergies ? menuData.allergies.split(',').map(a => a.trim()) : []
+                    description: menuData.description || "",
+                    allergyIds: menuData.allergyIds || []
                 })
             });
 
@@ -98,13 +86,7 @@ export const useMenu = () => {
     }, [fetchOwnerMenus]);
 
     const updateMenu = useCallback(async (storeId, menuId, menuData) => {
-        if (!storeId || !menuId) {
-            return;
-        }
-
-        if (loading) {
-            return;
-        }
+        if (!storeId || !menuId || loading) return;
 
         setLoading(true);
         setError(null);
@@ -120,8 +102,8 @@ export const useMenu = () => {
                 body: JSON.stringify({
                     name: menuData.name,
                     price: parseInt(menuData.price),
-                    description: menuData.description,
-                    allergies: menuData.allergies ? menuData.allergies.split(',').map(a => a.trim()) : []
+                    description: menuData.description || "",
+                    allergyIds: menuData.allergyIds || []
                 })
             });
 

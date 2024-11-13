@@ -48,6 +48,9 @@ export const API_ENDPOINTS = {
         delete: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`,
         userReviews: `${API_BASE}/api/v1/reviews/my`  // 사용자 리뷰 엔드포인트 추가
     },
+    allergy: {
+        list: `${API_BASE}/api/v2/allergies`
+    },
     crawler: {
         blog: `${API_BASE}/api/v1/crawler/blog`,
         news: `${API_BASE}/api/v1/crawler/news`,

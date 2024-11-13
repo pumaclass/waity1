@@ -3,21 +3,23 @@ import { useNavigate } from 'react-router-dom';
 import Header from '../../components/common/Header';
 import ImageUpload from '../../components/common/ImageUpload';
 import { useMenu } from '../../hooks/useMenu';
-import { useOwnerStore } from '../../hooks/useStore';  // 변경된 부분
+import { useOwnerStore } from '../../hooks/useStore';
+import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
 
 const MenuManagePage = () => {
     const navigate = useNavigate();
-    const { stores, fetchStores, loading: storeLoading, error: storeError } = useOwnerStore();  // 변경된 부분
+    const { stores, fetchStores, loading: storeLoading, error: storeError } = useOwnerStore();
     const { loading: menuLoading, createMenu } = useMenu();
 
     const [initialized, setInitialized] = useState(false);
     const [selectedStore, setSelectedStore] = useState(null);
+    const [allergies, setAllergies] = useState([]);
 
     const [formData, setFormData] = useState({
         name: '',
         price: '',
         description: '',
-        allergies: '',
+        allergyIds: [],
         category: '메인',
         images: [],
         isAvailable: true
@@ -30,6 +32,15 @@ const MenuManagePage = () => {
         const initializePage = async () => {
             if (!initialized) {
                 await fetchStores();
+                try {
+                    const response = await fetchAPI(`/api/v2/allergies`);
+                    console.log('Allergies API response:', response); // 응답 확인
+                    if (response.data) {
+                        setAllergies(response.data);
+                    }
+                } catch (err) {
+                    console.error('Failed to fetch allergies:', err);
+                }
                 setInitialized(true);
             }
         };
@@ -105,20 +116,18 @@ const MenuManagePage = () => {
             />
             <div className="pt-14 p-4">
                 <form onSubmit={handleSubmit} className="space-y-6 pb-24">
-                    {/* 이미지 업로드 */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             메뉴 이미지
                         </label>
                         <ImageUpload
                             images={formData.images}
-                            onChange={(images) => setFormData({ ...formData, images })}
+                            onChange={(images) => setFormData({...formData, images})}
                             maxImages={1}
                             aspectRatio="4:3"
                         />
                     </div>
 
-                    {/* 메뉴 정보 입력 필드들... */}
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             메뉴 이름
@@ -126,7 +135,7 @@ const MenuManagePage = () => {
                         <input
                             type="text"
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                            onChange={(e) => setFormData({...formData, name: e.target.value})}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="메뉴 이름을 입력하세요"
                             required
@@ -140,7 +149,7 @@ const MenuManagePage = () => {
                         <input
                             type="number"
                             value={formData.price}
-                            onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+                            onChange={(e) => setFormData({...formData, price: e.target.value})}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="가격을 입력하세요"
                             required
@@ -153,7 +162,7 @@ const MenuManagePage = () => {
                         </label>
                         <select
                             value={formData.category}
-                            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+                            onChange={(e) => setFormData({...formData, category: e.target.value})}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         >
                             {categories.map(category => (
@@ -170,7 +179,7 @@ const MenuManagePage = () => {
                         </label>
                         <textarea
                             value={formData.description}
-                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                            onChange={(e) => setFormData({...formData, description: e.target.value})}
                             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="메뉴에 대한 설명을 입력하세요"
                             rows={3}
@@ -181,13 +190,56 @@ const MenuManagePage = () => {
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                             알레르기 정보
                         </label>
-                        <input
-                            type="text"
-                            value={formData.allergies}
-                            onChange={(e) => setFormData({ ...formData, allergies: e.target.value })}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="알레르기 정보를 입력하세요 (예: 땅콩, 우유)"
-                        />
+                        <div
+                            className="grid grid-cols-4 gap-4 p-4 border border-gray-300 rounded-lg max-h-48 overflow-y-auto">
+                            {allergies.map(allergy => (
+                                <label key={allergy.id} className="flex items-center space-x-2">
+                                    <input
+                                        type="checkbox"
+                                        value={allergy.id}
+                                        checked={formData.allergyIds.includes(allergy.id)}
+                                        onChange={(e) => {
+                                            const id = Number(e.target.value);
+                                            setFormData(prev => ({
+                                                ...prev,
+                                                allergyIds: e.target.checked
+                                                    ? [...prev.allergyIds, id]
+                                                    : prev.allergyIds.filter(allergyId => allergyId !== id)
+                                            }));
+                                        }}
+                                        className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    />
+                                    <span className="text-sm text-gray-600">{allergy.name}</span>
+                                </label>
+                            ))}
+                        </div>
+                        {formData.allergyIds.length > 0 && (
+                            <div className="mt-2 flex flex-wrap gap-2">
+                                {formData.allergyIds.map(id => {
+                                    const allergy = allergies.find(a => a.id === id);
+                                    return (
+                                        <span
+                                            key={id}
+                                            className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-blue-100 text-blue-800"
+                                        >
+                        {allergy?.name}
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setFormData(prev => ({
+                                                        ...prev,
+                                                        allergyIds: prev.allergyIds.filter(allergyId => allergyId !== id)
+                                                    }));
+                                                }}
+                                                className="ml-1 text-blue-600 hover:text-blue-800"
+                                            >
+                            ×
+                        </button>
+                    </span>
+                                    );
+                                })}
+                            </div>
+                        )}
                     </div>
 
                     <div className="flex items-center">
@@ -197,7 +249,7 @@ const MenuManagePage = () => {
                         <input
                             type="checkbox"
                             checked={formData.isAvailable}
-                            onChange={(e) => setFormData({ ...formData, isAvailable: e.target.checked })}
+                            onChange={(e) => setFormData({...formData, isAvailable: e.target.checked})}
                             className="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
                         />
                         <span className="ml-2 text-sm text-gray-600">
