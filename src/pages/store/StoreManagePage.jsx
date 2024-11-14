@@ -8,6 +8,7 @@ import WaitingManagement from '../../components/waiting/WaitingManagement';
 import { useOwnerStore } from '../../hooks/useStore';
 import { useWaiting } from '../../hooks/useWaiting';
 import ReservationOwnerList from "../../components/reservation/ReservationOwnerList";
+import Dashboard from "../../components/dashboard/Dashboard";
 
 const StoreManagePage = () => {
     const navigate = useNavigate();
@@ -140,12 +141,9 @@ const StoreManagePage = () => {
                             />
                         )}
                         {selectedTab === 'overview' && (
-                            <div className="p-4 space-y-4">
-                                {/* Overview 내용 */}
-                                <div className="grid grid-cols-2 gap-4">
-                                    {/* 통계 카드들 */}
-                                </div>
-                            </div>
+                            <Dashboard
+                                storeId={selectedStore.id}
+                            />
                         )}
                         {selectedTab === 'reservations' && (
                             <ReservationOwnerList

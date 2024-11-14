@@ -24,9 +24,16 @@ const PAYMENT_STATUS = {
     CANCELLED: 'CANCELLED'
 };
 
+const SUMMARY_DATE = {
+    DAY : 'DAY',
+    WEEK : 'WEEK',
+    MONTH : 'MONTH'
+}
+
 export {
     METHOD,
     RESERVATION_TYPE,
     RESERVATION_STATUS,
-    PAYMENT_STATUS
+    PAYMENT_STATUS,
+    SUMMARY_DATE
 }
