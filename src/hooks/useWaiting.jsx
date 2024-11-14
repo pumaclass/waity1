@@ -82,26 +82,8 @@ export const useWaiting = () => {
     // 웨이팅 상태 확인
     const checkWaitingStatus = async (storeId) => {
         setLoading(true);
-        try {
-            const response = await fetchAPI(API_ENDPOINTS.waiting.check(storeId));
-            console.log('Check waiting status response:', response);
-
-            if (response && response.data) {
-                const userId = JSON.parse(localStorage.getItem('user')).id;
-                const userInfo = response.data.userIds?.find(user => user.userId === userId);
-
-                return {
-                    isWaiting: !!userInfo,
-                    rank: userInfo?.rank || null
-                };
-            }
-            return { isWaiting: false, rank: null };
-        } catch (err) {
-            console.error('Failed to check waiting status:', err);
-            return { isWaiting: false, rank: null };
-        } finally {
-            setLoading(false);
-        }
+        const response = await fetchAPI(API_ENDPOINTS.waiting.check(storeId));
+        return response.data.isWaiting;
     };
 
     // 웨이팅 취소

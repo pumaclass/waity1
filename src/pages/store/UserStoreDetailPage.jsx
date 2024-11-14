@@ -8,6 +8,7 @@ import StoreBlogNews from '../../components/store/StoreBlogNewsModal';
 import NearbyStores from '../../components/store/NearbyStores';
 import Rating from '../../components/common/Rating';
 import { useUserStore } from '../../hooks/useStore';
+import { useWaiting } from '../../hooks/useWaiting';
 import { STORE_PLACEHOLDER } from '../../constants/images';
 import WaitingButton from '../../components/waiting/WaitingButton';
 import ReservationButton from "../../components/reservation/ReservationButton";
@@ -16,16 +17,36 @@ const UserStoreDetailPage = () => {
     const { storeId } = useParams();
     const navigate = useNavigate();
     const { store, loading, error, fetchStoreDetail } = useUserStore();
+    const { checkWaitingStatus } = useWaiting();
+    const [isWaiting, setIsWaiting] = useState(false);
     const [activeTab, setActiveTab] = useState('menu');
     const [showShareModal, setShowShareModal] = useState(false);
     const [initialized, setInitialized] = useState(false);
 
+    // 매장 상세 정보와 웨이팅 상태 초기화
     useEffect(() => {
         if (storeId && !initialized) {
             fetchStoreDetail(storeId);
             setInitialized(true);
         }
     }, [storeId, initialized]);
+
+    // 웨이팅 상태 확인 및 초기화
+    useEffect(() => {
+        console.log('웨이팅 상태 변경!')
+        const fetchWaitingStatus = async () => {
+            const status = await checkWaitingStatus(storeId);
+            setIsWaiting(status);
+        };
+
+        if (storeId) {
+            fetchWaitingStatus();
+        }
+    }, [storeId, checkWaitingStatus]);
+
+    const handleWaitingUpdate = (newStatus) => {
+        setIsWaiting(newStatus);
+    };
 
     const handleShare = async () => {
         if (navigator.share) {
@@ -167,14 +188,18 @@ const UserStoreDetailPage = () => {
                         </div>
                     </div>
 
-                    {/* 웨이팅 버튼 */}
+                    {/* 웨이팅 및 예약 버튼 */}
                     {!store.isDeleted && (
-                        <div className="mt-3 flex justify-between">
-                            <div className="flex-1 mr-1">
-                                <WaitingButton storeId={storeId}/>
+                        <div className="mt-3 flex justify-between gap-2">
+                            <div className="flex-1">
+                                <WaitingButton 
+                                    storeId={storeId} 
+                                    isWaiting={isWaiting} 
+                                    onWaitingUpdate={handleWaitingUpdate} 
+                                />
                             </div>
-                            <div className="flex-1 ml-1">
-                                <ReservationButton store={store}/>
+                            <div className="flex-1">
+                                <ReservationButton store={store} />
                             </div>
                         </div>
                     )}

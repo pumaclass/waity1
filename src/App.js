@@ -1,5 +1,7 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import LoginPage from './pages/auth/LoginPage';
 import SignupPage from './pages/auth/SignupPage';
 import UserStoreListPage from './pages/store/UserStoreListPage';
@@ -20,6 +22,8 @@ function App() {
     return (
         <AuthProvider>
             <BrowserRouter>
+                {/* 전역적으로 사용되는 ToastContainer */}
+                <ToastContainer position="bottom-left" autoClose={1000} />
                 <Routes>
                     {/* 인증 라우트 */}
                     <Route path="/login" element={<AuthRoute><LoginPage /></AuthRoute>} />
