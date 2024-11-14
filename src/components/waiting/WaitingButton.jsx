@@ -1,136 +1,162 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useWaiting } from '../../hooks/useWaiting';
-import { useAuthContext } from '../../contexts/AuthContext';
+import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
+import { toast } from 'react-toastify';
+import { EventSourcePolyfill } from 'event-source-polyfill';
 import WaitingModal from './WaitingModal';
+import 'react-toastify/dist/ReactToastify.css';
 
-const WaitingButton = ({ storeId }) => {
-    const { user } = useAuthContext();
-    const { addWaiting, cancelWaiting, connectWaiting, checkWaitingStatus } = useWaiting();
-
-    const [isWaiting, setIsWaiting] = useState(false);
+const WaitingButton = ({ storeId, isWaiting, onWaitingUpdate }) => {
+    const { navigateToWaitingStatus } = useWaiting();
+    const [loading, setLoading] = useState(false);
     const [showModal, setShowModal] = useState(false);
     const [rank, setRank] = useState(null);
+    const [shouldReconnect, setShouldReconnect] = useState(true); // 재연결 여부 제어
     const eventSourceRef = useRef(null);
-    const initialCheckDoneRef = useRef(false);
+    const reconnectTimeoutRef = useRef(null);
 
-    // EventSource 메시지 핸들러
-    const handleEventSourceMessage = useCallback((event) => {
+    // 웨이팅 신청
+    const handleWaitingJoin = async () => {
+        setLoading(true);
         try {
-            const data = JSON.parse(event.data);
+            const response = await fetchAPI(API_ENDPOINTS.waiting.add(storeId), {
+                method: 'POST',
+            });
 
-            if (data === 'closed' || data === '대기열 마감') {
-                setIsWaiting(false);
-                setShowModal(false);
-                if (eventSourceRef.current) {
-                    eventSourceRef.current.close();
-                }
-                alert('웨이팅이 마감되었습니다.');
-                return;
-            }
-
-            if (data.userIds?.length > 0) {
-                const userInfo = data.userIds.find(u => u.userId === user?.id);
-                if (userInfo) {
-                    setRank(userInfo.rank);
-                }
+            if (response.status === 200) {
+                toast.success('웨이팅 신청이 완료되었습니다.');
+                onWaitingUpdate(true);  // 웨이팅 상태를 true로 업데이트
+                setShouldReconnect(true); // 재연결 가능하도록 설정
+            } else {
+                const errorMessage = response.message || '웨이팅 신청에 실패했습니다.';
+                toast.error(errorMessage);
             }
         } catch (error) {
-            console.error('Failed to parse SSE message:', error);
+            toast.error('웨이팅 신청 중 오류가 발생했습니다.');
+            console.error('Error adding to waiting queue:', error);
+        } finally {
+            setLoading(false);
         }
-    }, [user?.id]);
+    };
 
-    // EventSource 연결 함수
+    // SSE 연결 설정 및 데이터 수신
     const initEventSource = useCallback(() => {
-        try {
-            // 이전 연결 정리
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
-            }
+        if (!shouldReconnect) return; // 재연결이 불필요한 경우 종료
 
-            const es = connectWaiting(storeId);
-            es.onmessage = handleEventSourceMessage;
-            es.onerror = () => {
-                es.close();
-            };
-            eventSourceRef.current = es;
-        } catch (error) {
-            console.error('Failed to connect EventSource:', error);
-        }
-    }, [storeId, connectWaiting, handleEventSourceMessage]);
+        const token = localStorage.getItem('accessToken'); // 최신 토큰 가져오기
+        const eventSource = new EventSourcePolyfill(`${API_ENDPOINTS.waiting.connect(storeId)}`, {
+            headers: {
+                Authorization: token,
+            },
+        });
 
-    // 초기 상태 체크 - 한 번만 실행
-    useEffect(() => {
-        if (!user || !storeId || initialCheckDoneRef.current) return;
+        eventSource.onmessage = (event) => {
+            const receivedRank = parseInt(event.data, 10);
+            setRank(receivedRank);
 
-        const checkInitialStatus = async () => {
-            try {
-                const status = await checkWaitingStatus(storeId);
-                setIsWaiting(status.isWaiting);
-                if (status.isWaiting) {
-                    setRank(status.rank);
-                    initEventSource();
-                }
-                initialCheckDoneRef.current = true;
-            } catch (error) {
-                console.error('Failed to check status:', error);
+            if (receivedRank === 0) {
+                toast.success("입장하실 수 있습니다!");
+                onWaitingUpdate(false);  // 웨이팅 상태를 false로 업데이트
+                setShowModal(false); // 모달 닫기
+                setShouldReconnect(false); // 재연결 방지
+                eventSource.close();  // SSE 연결 종료
+                clearTimeout(reconnectTimeoutRef.current); // 재연결 타이머 초기화
+            } else if(event.data == 'cancel') {
+                console.log('cancel!!!');
+                eventSource.close();
             }
         };
 
-        checkInitialStatus();
+        eventSource.onerror = () => {
+            console.error("SSE connection error");
+            if (shouldReconnect) {
+                toast.error("SSE 연결 오류가 발생했습니다. 다시 연결을 시도합니다.");
+                eventSource.close();
 
-        // cleanup
+                // 5초 후에 SSE를 재연결
+                reconnectTimeoutRef.current = setTimeout(() => {
+                    initEventSource();
+                }, 5000);
+            }
+        };
+
+        eventSourceRef.current = eventSource;
+
+        return () => {
+            eventSource.close();
+            clearTimeout(reconnectTimeoutRef.current); // 컴포넌트 언마운트 시 타이머 제거
+        };
+    }, [storeId, shouldReconnect, onWaitingUpdate]);
+
+    // isWaiting 상태 변경 시 SSE 연결 설정
+    useEffect(() => {
+        if (isWaiting) {
+            initEventSource();
+        } else if (eventSourceRef.current) {
+            eventSourceRef.current.close();
+            eventSourceRef.current = null;
+        }
+
         return () => {
             if (eventSourceRef.current) {
                 eventSourceRef.current.close();
             }
+            clearTimeout(reconnectTimeoutRef.current); // 컴포넌트 언마운트 시 타이머 제거
         };
-    }, [user, storeId, checkWaitingStatus, initEventSource]);
+    }, [isWaiting, initEventSource]);
 
-    const handleWaitingJoin = async () => {
-        if (!user) {
-            alert('웨이팅 신청을 위해 로그인이 필요합니다.');
-            return;
-        }
-
-        try {
-            await addWaiting(storeId);
-            setIsWaiting(true);
-            setShowModal(true);
-            initEventSource();
-        } catch (error) {
-            alert(error.message);
-        }
+    // 모달 열기
+    const handleWaitingStatus = () => {
+        setShowModal(true);
     };
 
-    const handleWaitingCancel = async () => {
-        try {
-            await cancelWaiting(storeId);
-            setIsWaiting(false);
-            setRank(null);
-            setShowModal(false);
+    // 모달 닫기
+    const handleCloseModal = () => {
+        setShowModal(false);
+    };
 
-            if (eventSourceRef.current) {
-                eventSourceRef.current.close();
+    // 웨이팅 취소 요청 함수
+    const handleCancel = async () => {
+        try {
+            const response = await fetchAPI(API_ENDPOINTS.waiting.cancel(storeId), {
+                method: 'DELETE',
+            });
+    
+            if (response.status === 200) {
+                toast.success('웨이팅이 취소되었습니다.');
+                setShouldReconnect(false); // 취소 후 재연결 방지
+                onWaitingUpdate(false); // 웨이팅 상태를 false로 업데이트
+            } else {
+                toast.error('웨이팅 취소에 실패했습니다.');
             }
         } catch (error) {
-            alert(error.message);
+            toast.error('웨이팅 취소 중 오류가 발생했습니다.');
+            console.error('Error canceling waiting:', error);
         }
     };
 
     return (
         <div className="w-full p-4 pb-safe">
             <button
-                onClick={isWaiting ? () => setShowModal(true) : handleWaitingJoin}
-                className="w-full bg-blue-500 text-white py-3 rounded-lg font-medium hover:bg-blue-600 transition-colors"
+                onClick={isWaiting ? handleWaitingStatus : handleWaitingJoin}
+                className={`w-full py-3 rounded-lg font-medium transition-colors ${
+                    isWaiting
+                        ? 'bg-green-500 text-white hover:bg-green-600' // 웨이팅 현황 색상
+                        : 'bg-blue-500 text-white hover:bg-blue-600'  // 웨이팅 신청 색상
+                }`}
+                disabled={loading}
             >
-                {isWaiting ? '웨이팅 현황 확인하기' : '웨이팅 신청'}
+                {isWaiting ? '웨이팅 현황' : '웨이팅 신청'}
             </button>
-
+            
             <WaitingModal
                 isOpen={showModal}
-                onClose={() => setShowModal(false)}
+                onClose={handleCloseModal}
                 rank={rank}
-                onCancel={handleWaitingCancel}
+                onCancel={() => {
+                    handleCloseModal();
+                    handleCancel();
+                }}
             />
         </div>
     );
