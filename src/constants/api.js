@@ -42,10 +42,11 @@ export const API_ENDPOINTS = {
         clear: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/clear`,
     },
     review: {
-        list: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
         create: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
         update: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`,
         delete: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`,
+        store: (storeId) => `${API_BASE}/api/v1/reviews/store/${storeId}`,
+        menu: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
         userReviews: `${API_BASE}/api/v1/reviews/my`  // 사용자 리뷰 엔드포인트 추가
     },
     allergy: {

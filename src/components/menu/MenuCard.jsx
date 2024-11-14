@@ -24,7 +24,7 @@ const MenuCard = ({ menu, isOwner, onEdit, onDelete }) => {
     useEffect(() => {
         const fetchReviewStats = async () => {
             try {
-                const response = await fetchAPI(`${API_ENDPOINTS.review.list(id)}?page=0&size=1`);
+                const response = await fetchAPI(`${API_ENDPOINTS.review.menu(id)}?page=0&size=1`);
                 if (response.totalElements > 0) {
                     const reviews = response.content;
                     const totalRating = reviews.reduce((sum, review) => sum + review.rating, 0);
@@ -48,7 +48,7 @@ const MenuCard = ({ menu, isOwner, onEdit, onDelete }) => {
         if (!showReviews) {
             setLoading(true);
             try {
-                const response = await fetchAPI(`${API_ENDPOINTS.review.list(id)}?page=0&size=3`);
+                const response = await fetchAPI(`${API_ENDPOINTS.review.menu(id)}?page=0&size=3`);
                 if (response.content) {
                     setReviews(response.content);
                 }
@@ -149,8 +149,8 @@ const MenuCard = ({ menu, isOwner, onEdit, onDelete }) => {
                                             <div className="flex items-center gap-2">
                                                 <span className="font-medium">{review.nickname}</span>
                                                 <span className="text-sm text-gray-500">
-                                                    {new Date(review.createdAt).toLocaleDateString()}
-                                                </span>
+                                                   {new Date(review.createdAt).toLocaleDateString()}
+                                               </span>
                                             </div>
                                             <div className="mt-1">
                                                 <Rating value={review.rating} readonly size="sm" />

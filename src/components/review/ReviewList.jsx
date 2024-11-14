@@ -29,7 +29,7 @@ const ReviewList = ({ storeId }) => {
 
             setLoading(true);
             try {
-                const response = await fetchAPI(`${API_ENDPOINTS.review.list(storeId)}?page=${page}&size=10`);
+                const response = await fetchAPI(`${API_ENDPOINTS.review.store(storeId)}?page=${page}&size=10`);
                 console.log('Review response:', response);
 
                 // 첫 페이지일 때만 통계 계산
