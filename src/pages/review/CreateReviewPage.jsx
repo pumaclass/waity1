@@ -1,31 +1,31 @@
 import { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { Star, X, Camera, AlertCircle } from 'lucide-react';
 import Header from '../../components/common/Header';
 import { useReview } from '../../hooks/useReview';
-import { API_ENDPOINTS } from '../../constants/api';  // API_ENDPOINTS import 추가
-
+import { API_ENDPOINTS } from '../../constants/api';
 
 const CreateReviewPage = () => {
-    const { storeId } = useParams();
+    const { storeId, menuId } = useParams();
     const navigate = useNavigate();
+    const location = useLocation();
+    const isWaiting = location.search.includes('type=WAIT');
     const { createReview, loading, error: reviewError } = useReview();
     const [storeInfo, setStoreInfo] = useState(null);
     const [formData, setFormData] = useState({
         title: '',
         content: '',
         rating: 5,
-        newImages: []
+        images: []
     });
     const [error, setError] = useState(null);
     const [submitting, setSubmitting] = useState(false);
 
-    // 매장 정보 로드
     useEffect(() => {
         const fetchStoreInfo = async () => {
             try {
                 const token = localStorage.getItem('accessToken');
-                const response = await fetch(`${API_ENDPOINTS.store.detail(storeId)}`, {  // API_ENDPOINTS 사용
+                const response = await fetch(`${API_ENDPOINTS.store.detail(storeId)}`, {
                     headers: {
                         'Authorization': token,
                         'Content-Type': 'application/json'
@@ -47,14 +47,13 @@ const CreateReviewPage = () => {
 
     const handleImageUpload = (e) => {
         const files = Array.from(e.target.files);
-        if (formData.newImages.length + files.length > 5) {
+        if (formData.images.length + files.length > 5) {
             setError('이미지는 최대 5장까지만 업로드할 수 있습니다.');
             return;
         }
 
-        const newImages = [...formData.newImages];
+        const newImages = [...formData.images];
         files.forEach(file => {
-            // 파일 크기 체크 (10MB)
             if (file.size > 10 * 1024 * 1024) {
                 setError('이미지 크기는 10MB를 초과할 수 없습니다.');
                 return;
@@ -64,7 +63,7 @@ const CreateReviewPage = () => {
 
         setFormData(prev => ({
             ...prev,
-            newImages: newImages
+            images: newImages
         }));
     };
 
@@ -81,8 +80,14 @@ const CreateReviewPage = () => {
                 throw new Error('리뷰 내용을 입력해주세요.');
             }
 
-            await createReview(storeId, formData);
-            navigate(-1); // 이전 페이지로 돌아가기
+            const isWaiting = new URLSearchParams(location.search).get('type') === 'WAIT';
+
+            if (!isWaiting && !menuId) {
+                throw new Error('메뉴 정보가 없습니다.');
+            }
+
+            await createReview(storeId, menuId, formData, isWaiting);
+            navigate(-1);
         } catch (err) {
             setError(err.message || '리뷰 작성에 실패했습니다.');
         } finally {
@@ -113,7 +118,6 @@ const CreateReviewPage = () => {
                 )}
 
                 <form onSubmit={handleSubmit} className="p-4 space-y-6">
-                    {/* 별점 */}
                     <div className="flex flex-col items-center py-6 bg-gray-50 rounded-lg">
                         <div className="flex space-x-2">
                             {[1, 2, 3, 4, 5].map((star) => (
@@ -138,7 +142,6 @@ const CreateReviewPage = () => {
                         </p>
                     </div>
 
-                    {/* 제목 입력 */}
                     <div>
                         <input
                             type="text"
@@ -153,28 +156,26 @@ const CreateReviewPage = () => {
                         </p>
                     </div>
 
-                    {/* 내용 입력 */}
                     <div>
-                        <textarea
-                            placeholder="리뷰 내용을 작성해주세요&#13;&#10;- 직접 방문한 솔직한 리뷰를 남겨주세요&#13;&#10;- 매장의 분위기, 서비스 등 자세한 평가는 다른 고객에게 도움이 됩니다"
-                            value={formData.content}
-                            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                            rows={6}
-                            className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                            maxLength={1000}
-                        />
+                       <textarea
+                           placeholder="리뷰 내용을 작성해주세요&#13;&#10;- 직접 방문한 솔직한 리뷰를 남겨주세요&#13;&#10;- 매장의 분위기, 서비스 등 자세한 평가는 다른 고객에게 도움이 됩니다"
+                           value={formData.content}
+                           onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                           rows={6}
+                           className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                           maxLength={1000}
+                       />
                         <p className="mt-1 text-xs text-gray-500 text-right">
                             {formData.content.length}/1000
                         </p>
                     </div>
 
-                    {/* 이미지 업로드 */}
                     <div>
                         <p className="text-sm font-medium text-gray-700 mb-2">
                             사진 첨부하기
                         </p>
                         <div className="flex flex-wrap gap-2">
-                            {formData.newImages.map((image, index) => (
+                            {formData.images.map((image, index) => (
                                 <div
                                     key={index}
                                     className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200"
@@ -187,9 +188,9 @@ const CreateReviewPage = () => {
                                     <button
                                         type="button"
                                         onClick={() => {
-                                            const newImages = [...formData.newImages];
+                                            const newImages = [...formData.images];
                                             newImages.splice(index, 1);
-                                            setFormData({ ...formData, newImages });
+                                            setFormData({ ...formData, images: newImages });
                                         }}
                                         className="absolute top-1 right-1 p-1 bg-black bg-opacity-50 rounded-full hover:bg-opacity-70"
                                     >
@@ -197,12 +198,12 @@ const CreateReviewPage = () => {
                                     </button>
                                 </div>
                             ))}
-                            {formData.newImages.length < 5 && (
+                            {formData.images.length < 5 && (
                                 <label className="w-20 h-20 flex flex-col items-center justify-center border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-gray-400 bg-gray-50">
                                     <Camera className="w-6 h-6 text-gray-400" />
                                     <span className="mt-1 text-xs text-gray-500">
-                                        {formData.newImages.length}/5
-                                    </span>
+                                       {formData.images.length}/5
+                                   </span>
                                     <input
                                         type="file"
                                         accept="image/*"
@@ -218,7 +219,6 @@ const CreateReviewPage = () => {
                         </p>
                     </div>
 
-                    {/* 에러 메시지 */}
                     {(error || reviewError) && (
                         <div className="flex items-center p-4 bg-red-50 rounded-lg">
                             <AlertCircle className="w-5 h-5 text-red-500 mr-2" />
@@ -226,7 +226,6 @@ const CreateReviewPage = () => {
                         </div>
                     )}
 
-                    {/* 등록 버튼 */}
                     <div className="fixed bottom-0 left-0 right-0 p-4 bg-white border-t">
                         <button
                             type="submit"

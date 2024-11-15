@@ -25,6 +25,7 @@ export const API_ENDPOINTS = {
         detail: (storeId, menuId) => `${API_BASE}/api/v2/stores/${storeId}/menus/${menuId}`,
         update: (storeId, menuId) => `${API_BASE}/api/v1/owner/stores/${storeId}/menus/${menuId}`,
         delete: (storeId, menuId) => `${API_BASE}/api/v2/owner/stores/${storeId}/menus/${menuId}`
+
     },
     search: {
         autocomplete: `${API_BASE}/api/search/autocomplete`,
@@ -42,11 +43,13 @@ export const API_ENDPOINTS = {
         clear: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/clear`,
     },
     review: {
-        create: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
+        create: (storeId, menuId) => `${API_BASE}/api/v1/reviews/${storeId}/${menuId}`,
+        createWaiting: (storeId) => `${API_BASE}/api/v1/reviews/${storeId}/waiting`,
         update: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`,
         delete: (reviewId) => `${API_BASE}/api/v1/reviews/${reviewId}`,
         store: (storeId) => `${API_BASE}/api/v1/reviews/store/${storeId}`,
         menu: (menuId) => `${API_BASE}/api/v1/reviews/${menuId}`,
+        menus: (reservationId) => `${API_BASE}/api/v1/reviews/reservations/${reservationId}/menus`,
         userReviews: `${API_BASE}/api/v1/reviews/my`  // 사용자 리뷰 엔드포인트 추가
     },
     allergy: {
@@ -70,7 +73,9 @@ export const API_ENDPOINTS = {
         apply: (reservationId) =>
             `${API_BASE}/api/v2/reservation-management/${reservationId}/apply`,
         complete: (reservationId) =>
-            `${API_BASE}/api/v2/reservation-management/${reservationId}/complete`
+            `${API_BASE}/api/v2/reservation-management/${reservationId}/complete`,
+        menus: (reservationId) => `${API_BASE}/api/v1/reviews/reservations/${reservationId}/menus` // 여기 추가
+
     },
     cart: {
         add: (storeId) => `${API_BASE}/api/v2/store/${storeId}/cart`,

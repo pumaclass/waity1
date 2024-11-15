@@ -21,7 +21,6 @@ import { ProtectedRoute, AuthRoute } from './components/route/ProtectedRoutes';
 function App() {
     return (
         <AuthProvider>
-            <BrowserRouter>
                 {/* 전역적으로 사용되는 ToastContainer */}
                 <ToastContainer position="bottom-left" autoClose={1000} />
                 <Routes>
@@ -60,8 +59,8 @@ function App() {
                         <Route path="/owner/stores/:storeId/waiting" element={<WaitingManagePage />} />
 
                         {/* 리뷰 관리 */}
-                        <Route path="/owner/reviews" element={<ReviewManagePage />} />
-                        <Route path="/owner/stores/:storeId/reviews" element={<ReviewManagePage />} />
+                        <Route path="/reviews/create/:storeId" element={<CreateReviewPage />} />
+                        <Route path="/reviews/create/:storeId/:menuId" element={<CreateReviewPage />} />
                     </Route>
 
                     {/* 404 페이지 */}
@@ -74,7 +73,6 @@ function App() {
                         </div>
                     }/>
                 </Routes>
-            </BrowserRouter>
         </AuthProvider>
     );
 }

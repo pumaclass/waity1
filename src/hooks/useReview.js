@@ -11,7 +11,6 @@ export const useReview = () => {
         hasNext: false
     });
 
-    // 메뉴별 리뷰 목록 조회
     const fetchReviews = useCallback(async (menuId, page = 0) => {
         if (!menuId) return;
 
@@ -63,7 +62,6 @@ export const useReview = () => {
         }
     }, []);
 
-    // 사용자의 리뷰 목록 조회
     const fetchUserReviews = useCallback(async (page = 0) => {
         setLoading(true);
         setError(null);
@@ -113,8 +111,7 @@ export const useReview = () => {
         }
     }, []);
 
-    // 리뷰 생성
-    const createReview = useCallback(async (menuId, reviewData) => {
+    const createReview = useCallback(async (storeId, menuId, reviewData, isWaiting = false) => {
         setLoading(true);
         setError(null);
 
@@ -129,15 +126,18 @@ export const useReview = () => {
             formData.append('content', reviewData.content);
             formData.append('rating', reviewData.rating);
 
-            if (reviewData.images) {
+            if (reviewData.images && reviewData.images.length > 0) {
                 reviewData.images.forEach(image => {
-                    if (image instanceof File) {
-                        formData.append('images', image);
-                    }
+                    formData.append('images', image);
                 });
             }
 
-            const response = await fetch(API_ENDPOINTS.review.create(menuId), {
+            // 웨이팅인 경우와 예약인 경우 다른 endpoint 사용
+            const endpoint = isWaiting
+                ? API_ENDPOINTS.review.createWaiting(storeId)
+                : API_ENDPOINTS.review.create(storeId, menuId);
+
+            const response = await fetch(endpoint, {
                 method: 'POST',
                 headers: {
                     'Authorization': token
@@ -146,7 +146,8 @@ export const useReview = () => {
             });
 
             if (!response.ok) {
-                throw new Error('리뷰 작성에 실패했습니다.');
+                const errorData = await response.json().catch(() => null);
+                throw new Error(errorData?.message || '리뷰 작성에 실패했습니다.');
             }
 
             const data = await response.json();
@@ -160,7 +161,6 @@ export const useReview = () => {
         }
     }, []);
 
-    // 리뷰 수정
     const updateReview = useCallback(async (reviewId, updateDto) => {
         setLoading(true);
         setError(null);
@@ -176,9 +176,9 @@ export const useReview = () => {
             formData.append('content', updateDto.content);
             formData.append('rating', updateDto.rating);
 
-            if ('newImages' in updateDto && updateDto.newImages && updateDto.newImages.length > 0) {
-                updateDto.newImages.forEach(image => {
-                    formData.append('newImages', image);
+            if (updateDto.images && updateDto.images.length > 0) {
+                updateDto.images.forEach(image => {
+                    formData.append('images', image);
                 });
             }
 
@@ -206,7 +206,6 @@ export const useReview = () => {
         }
     }, []);
 
-    // 리뷰 삭제
     const deleteReview = useCallback(async (reviewId) => {
         setLoading(true);
         setError(null);
@@ -243,7 +242,7 @@ export const useReview = () => {
         error,
         pagination,
         fetchReviews,
-        fetchUserReviews,  // 함수 다시 추가
+        fetchUserReviews,
         createReview,
         updateReview,
         deleteReview

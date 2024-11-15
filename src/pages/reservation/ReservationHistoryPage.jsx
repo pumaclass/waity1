@@ -3,8 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Calendar, CreditCard } from 'lucide-react';
 import Header from '../../components/common/Header';
 import { API_ENDPOINTS } from '../../constants/api';
-import { useAuthContext } from '../../contexts/AuthContext';  // 이 줄을 추가해주세요
-
+import { useAuthContext } from '../../contexts/AuthContext';
 
 const ReservationType = {
     WAIT: 'WAIT',
@@ -26,14 +25,16 @@ const PaymentStatus = {
 
 const ReservationHistoryPage = () => {
     const navigate = useNavigate();
-    const { isAuthenticated, user } = useAuthContext();  // AuthContext 사용
+    const { isAuthenticated, user } = useAuthContext();
     const [activeType, setActiveType] = useState(ReservationType.RESERVATION);
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [selectedReservation, setSelectedReservation] = useState(null);
+    const [menuList, setMenuList] = useState([]);
+    const [showMenuModal, setShowMenuModal] = useState(false);
 
     useEffect(() => {
-        // 토큰과 인증 상태 로깅
         console.log('Is Authenticated:', isAuthenticated);
         console.log('User:', user);
         console.log('Token:', localStorage.getItem('accessToken'));
@@ -53,7 +54,7 @@ const ReservationHistoryPage = () => {
 
             const params = new URLSearchParams({
                 type: activeType,
-                page: 1,  // 0 대신 1로 수정
+                page: 1,
                 size: 10
             });
 
@@ -71,7 +72,6 @@ const ReservationHistoryPage = () => {
                 throw new Error(responseData.message || '예약 목록을 불러오는데 실패했습니다.');
             }
 
-            // 응답 구조에 맞게 데이터 처리
             if (responseData.data && responseData.data.content) {
                 setReservations(responseData.data.content);
             } else {
@@ -113,6 +113,36 @@ const ReservationHistoryPage = () => {
             alert('예약이 취소되었습니다.');
         } catch (error) {
             console.error('Failed to cancel:', error);
+            alert(error.message);
+        }
+    };
+
+    const handleReviewClick = async (reservation) => {
+        try {
+            const token = localStorage.getItem('accessToken');
+            const response = await fetch(`${API_ENDPOINTS.menu.list(reservation.storeId)}`, {
+                headers: {
+                    'Authorization': token,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                throw new Error('메뉴 목록을 불러오는데 실패했습니다.');
+            }
+
+            const data = await response.json();
+            console.log('Menu response data structure:', data);
+            if (!data.data || data.data.length === 0) {
+                alert('등록된 메뉴가 없습니다.');
+                return;
+            }
+
+            setMenuList(data.data);
+            setSelectedReservation(reservation);
+            setShowMenuModal(true);
+        } catch (error) {
+            console.error('Failed to fetch menus:', error);
             alert(error.message);
         }
     };
@@ -168,6 +198,37 @@ const ReservationHistoryPage = () => {
         }
     };
 
+    const MenuSelectionModal = () => (
+        <div className="fixed inset-0 z-50 overflow-auto bg-black bg-opacity-50 flex items-center justify-center">
+            <div className="relative bg-white w-11/12 max-w-md mx-auto rounded-lg shadow-lg p-6">
+                <h3 className="text-lg font-bold mb-4">리뷰를 작성할 메뉴를 선택해주세요</h3>
+                <div className="space-y-3 max-h-[400px] overflow-y-auto">
+                    {menuList.map((menu) => (
+                        <button
+                            key={menu.id}
+                            onClick={() => {
+                                setShowMenuModal(false);
+                                navigate(`/reviews/create/${selectedReservation.storeId}/${menu.id}`);
+                            }}
+                            className="w-full p-4 text-left border rounded-lg hover:bg-gray-50 transition-colors"
+                        >
+                            <div className="font-medium">{menu.name}</div>
+                            <div className="text-sm text-gray-500 mt-1">
+                                {menu.price?.toLocaleString()}원
+                            </div>
+                        </button>
+                    ))}
+                </div>
+                <button
+                    onClick={() => setShowMenuModal(false)}
+                    className="w-full mt-4 py-3 bg-gray-100 rounded-lg text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                    닫기
+                </button>
+            </div>
+        </div>
+    );
+
     return (
         <div className="min-h-screen bg-gray-50">
             <Header
@@ -180,7 +241,6 @@ const ReservationHistoryPage = () => {
             />
 
             <div className="pt-14">
-                {/* 탭 버튼 */}
                 <div className="bg-white border-b">
                     <div className="flex">
                         <button
@@ -206,7 +266,6 @@ const ReservationHistoryPage = () => {
                     </div>
                 </div>
 
-                {/* 예약/웨이팅 목록 */}
                 <div className="p-4">
                     {loading ? (
                         <div className="flex justify-center items-center h-40">
@@ -252,24 +311,18 @@ const ReservationHistoryPage = () => {
                                                 </div>
                                             )}
                                         </div>
-                                        <span className={`px-2 py-1 rounded-full text-sm font-medium ${getStatusClass(reservation.status)}`}>
+                                        <span
+                                            className={`px-2 py-1 rounded-full text-sm font-medium ${
+                                                getStatusClass(reservation.status)
+                                            }`}
+                                        >
                                             {getStatusText(reservation.status)}
                                         </span>
                                     </div>
 
-                                    {(reservation.status === ReservationStatus.RESERVATION ||
-                                        reservation.status === ReservationStatus.APPLY) && (
-                                        <button
-                                            onClick={() => handleCancel(reservation.storeId, reservation.reserveId)}
-                                            className="w-full mt-2 py-2 bg-red-50 text-red-600 rounded-lg text-sm font-medium hover:bg-red-100"
-                                        >
-                                            예약 취소
-                                        </button>
-                                    )}
-
                                     {reservation.status === ReservationStatus.COMPLETE && !reservation.hasReview && (
                                         <button
-                                            onClick={() => navigate(`/reviews/create/${reservation.storeId}`)}
+                                            onClick={() => handleReviewClick(reservation)}
                                             className="w-full mt-2 py-2 bg-blue-50 text-blue-600 rounded-lg text-sm font-medium hover:bg-blue-100"
                                         >
                                             리뷰 작성
@@ -281,6 +334,7 @@ const ReservationHistoryPage = () => {
                     )}
                 </div>
             </div>
+            {showMenuModal && <MenuSelectionModal />}
         </div>
     );
 };
