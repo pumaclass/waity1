@@ -34,11 +34,11 @@ const WaitingManagement = ({ storeId, onStatsUpdate }) => {
         }
     };
 
-    const handleClearFromRank = async (cutline) => {
-        if (!window.confirm(`${cutline}번 이후의 웨이팅을 모두 마감하시겠습니까?`)) return;
+    const handleClearFromRank = async () => {
+        if (!window.confirm(`웨이팅을 모두 마감하시겠습니까?`)) return;
 
         try {
-            await fetchAPI(`${API_ENDPOINTS.waiting.clear(storeId)}?cutline=${cutline}`, {
+            await fetchAPI(`${API_ENDPOINTS.waiting.clear(storeId)}?cutline=${0}`, {
                 method: 'DELETE'
             });
             fetchWaitingList();
@@ -117,23 +117,16 @@ const WaitingManagement = ({ storeId, onStatsUpdate }) => {
                 <div className="mt-6 bg-white rounded-lg shadow p-4">
                     <h3 className="text-lg font-medium mb-4">웨이팅 마감</h3>
                     <div className="flex gap-2">
-                        <input
-                            type="number"
-                            min="0"
-                            className="flex-1 px-3 py-2 border rounded-lg"
-                            placeholder="마감할 순번 입력"
-                            value={cutline}
-                            onChange={(e) => setCutline(e.target.value)}
-                        />
+          
                         <button
-                            onClick={() => handleClearFromRank(cutline)}
+                            onClick={() => handleClearFromRank()}
                             className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                         >
                             마감처리
                         </button>
                     </div>
                     <p className="mt-2 text-sm text-gray-500">
-                        입력한 번호 이후의 모든 웨이팅이 마감됩니다.
+                        모든 웨이팅이 마감됩니다.
                     </p>
                 </div>
             )}

@@ -61,9 +61,17 @@ const WaitingButton = ({ storeId, isWaiting, onWaitingUpdate }) => {
                 setShouldReconnect(false); // 재연결 방지
                 eventSource.close();  // SSE 연결 종료
                 clearTimeout(reconnectTimeoutRef.current); // 재연결 타이머 초기화
-            } else if(event.data == 'cancel') {
+            } else if(event.data === 'cancel') {
                 console.log('cancel!!!');
                 eventSource.close();
+            } else if(event.data === 'end')
+            {
+                toast.success('대기열이 마감되었습니다.')
+                onWaitingUpdate(false);  // 웨이팅 상태를 false로 업데이트
+                setShowModal(false); // 모달 닫기
+                setShouldReconnect(false); // 재연결 방지
+                eventSource.close();
+                clearTimeout(reconnectTimeoutRef.current); // 재연결 타이머 초기화
             }
         };
 

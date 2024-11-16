@@ -41,6 +41,12 @@ export const API_ENDPOINTS = {
         poll: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/poll`,
         completed: `${API_BASE}/api/v2/user/waitings/completed`,
         clear: (storeId) => `${API_BASE}/api/v2/owner/stores/${storeId}/waitings/clear`,
+        statistics: {
+            daily: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/waitings/statistics/daily`,
+            dailyRange: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/waitings/statistics/daily/range`,
+            monthly: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/waitings/statistics/monthly`,
+            hourly: (storeId) => `${API_BASE}/api/v1/owner/stores/${storeId}/waitings/statistics/hourly`
+        }
     },
     review: {
         create: (storeId, menuId) => `${API_BASE}/api/v1/reviews/${storeId}/${menuId}`,

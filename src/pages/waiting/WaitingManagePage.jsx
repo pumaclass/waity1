@@ -6,7 +6,7 @@ import Header from '../../components/common/Header';
 const WaitingManagePage = () => {
     const [waitingList, setWaitingList] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [cutline, setCutline] = useState('');  // cutline state 추가
+    const [cutline, setCutline] = useState(''); // cutline state 추가
     const { user } = useAuthContext();
 
     // 웨이팅 목록 조회
@@ -79,7 +79,7 @@ const WaitingManagePage = () => {
                             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto" />
                         </div>
                     ) : waitingList.userIds?.length > 0 ? (
-                        waitingList.userIds.map((waiting, index) => (
+                        waitingList.userIds.map((waiting) => (
                             <div key={waiting.userId} className="bg-white rounded-lg shadow p-4">
                                 <div className="flex justify-between items-center">
                                     <div>
@@ -90,14 +90,6 @@ const WaitingManagePage = () => {
                                             #{waiting.userId}
                                         </span>
                                     </div>
-                                    {index === 0 && (
-                                        <button
-                                            onClick={handlePollFirst}
-                                            className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-                                        >
-                                            입장
-                                        </button>
-                                    )}
                                 </div>
                             </div>
                         ))
@@ -108,30 +100,36 @@ const WaitingManagePage = () => {
                     )}
                 </div>
 
-                {/* 마감 처리 */}
-                {waitingList.totalWaitingNumber > 0 && (
-                    <div className="mt-6 bg-white rounded-lg shadow p-4">
-                        <h3 className="text-lg font-medium mb-4">웨이팅 마감</h3>
-                        <div className="flex gap-2">
+                {/* 입장 및 마감 처리 */}
+                <div className="mt-6 bg-white rounded-lg shadow p-4">
+                    <h3 className="text-lg font-medium mb-4">웨이팅 관리</h3>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={handlePollFirst}
+                            className="flex-1 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
+                        >
+                            입장
+                        </button>
+                        <div className="flex-1">
                             <input
                                 type="number"
                                 min="0"
-                                className="flex-1 px-3 py-2 border rounded-lg"
+                                className="w-full px-3 py-2 border rounded-lg"
                                 placeholder="마감할 순번 입력"
                                 onChange={(e) => setCutline(e.target.value)}
                             />
-                            <button
-                                onClick={() => handleClearFromRank(cutline)}
-                                className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                            >
-                                마감처리
-                            </button>
                         </div>
-                        <p className="mt-2 text-sm text-gray-500">
-                            입력한 번호 이후의 모든 웨이팅이 마감됩니다.
-                        </p>
+                        <button
+                            onClick={() => handleClearFromRank(cutline)}
+                            className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                        >
+                            마감
+                        </button>
                     </div>
-                )}
+                    <p className="mt-2 text-sm text-gray-500">
+                        입력한 번호 이후의 모든 웨이팅이 마감됩니다.
+                    </p>
+                </div>
             </div>
         </div>
     );

@@ -5,6 +5,7 @@ import {formatDate} from '../../common/common'
 import {RESERVATION_TYPE , RESERVATION_STATUS, SUMMARY_DATE} from '../../constants/const';
 import {API_ENDPOINTS, fetchGET} from "../../constants/api";
 import {toast} from "react-toastify";
+import WaitingStatistics from './WaitingDashboard'; // 추가된 모듈
 
 // 필요한 스케일 및 요소 등록
 Chart.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
@@ -272,6 +273,11 @@ const Dashboard = ({ ...props }) => {
                     <Line data={data} options={options}/>
                 </div>
             </div>
+            {/* 추가된 웨이팅 통계 */}
+            <div className="bg-white p-6 rounded-lg shadow-lg min-h-screen">
+                 <WaitingStatistics storeId={storeId} />
+            </div>
+
         </div>
     );
 };
