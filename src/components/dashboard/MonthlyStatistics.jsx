@@ -31,12 +31,12 @@ const MonthlyStatistics = ({ storeId }) => {
   const fetchMonthlyStatistics = async () => {
     setLoading(true);
     resetData();
-
+  
     try {
       const response = await fetchGET(API_ENDPOINTS.waiting.statistics.monthly(storeId), {
         params: { month: yearMonth },
       });
-
+  
       if (response.status === 200) {
         const data = response.data || {};
         if (!data.dailyStatistics || Object.keys(data.dailyStatistics).length === 0) {
@@ -45,27 +45,32 @@ const MonthlyStatistics = ({ storeId }) => {
           setLoading(false);
           return;
         }
-
+  
         setDataAvailable(true);
-
+  
         const dailyStatsArray = Object.entries(data.dailyStatistics).map(([date, stats]) => ({
           date,
           ...stats,
         }));
-
-        const categories = dailyStatsArray.map((stat) => stat.date);
+  
+        // 날짜에서 "일"만 추출
+        const categories = dailyStatsArray.map((stat) => {
+          const date = new Date(stat.date);
+          return `${date.getDate()}일`; // "일"만 추출
+        });
+  
         const completedCounts = dailyStatsArray.map((stat) => stat.completedCount || 0);
         const canceledCounts = dailyStatsArray.map((stat) => stat.canceledCount || 0);
         const totalCounts = dailyStatsArray.map((stat) => stat.totalWaitingCount || 0);
         const maxWaitTimes = dailyStatsArray.map((stat) => stat.maxWaitTime || 0);
         const minWaitTimes = dailyStatsArray.map((stat) => stat.minWaitTime || 0);
-
+  
         // Calculate averages
         const totalCompleted = completedCounts.reduce((sum, value) => sum + value, 0);
         const totalCanceled = canceledCounts.reduce((sum, value) => sum + value, 0);
         const totalWaiting = totalCounts.reduce((sum, value) => sum + value, 0);
         const daysCount = dailyStatsArray.length;
-
+  
         setAverageData({
           avgCompletedWaitTime: data.avgCompletedWaitTime || 0,
           avgCanceledWaitTime: data.avgCanceledWaitTime || 0,
@@ -74,7 +79,7 @@ const MonthlyStatistics = ({ storeId }) => {
           avgCanceledCount: (totalCanceled / daysCount).toFixed(2),
           avgCancelRate: ((totalCanceled / totalWaiting) * 100).toFixed(2) || 0,
         });
-
+  
         setDailyStats(dailyStatsArray);
         setCategories(categories);
         setCompletedSeries(completedCounts);
@@ -109,6 +114,7 @@ const MonthlyStatistics = ({ storeId }) => {
     title: {
       text: `${yearMonth.replace('-', '년 ')}월 통합 웨이팅 통계`,
       left: 'center',
+      top: '0%',
     },
     tooltip: {
       trigger: 'axis',
@@ -127,6 +133,12 @@ const MonthlyStatistics = ({ storeId }) => {
           .join('<br/>');
       },
     },
+    grid: {
+      top: '20%',
+      bottom: '25%',
+      left: '10%',
+      right: '10%',
+    },
     legend: {
       data: [
         '전체 웨이팅 수',
@@ -135,11 +147,16 @@ const MonthlyStatistics = ({ storeId }) => {
         '최대 대기 시간',
         '최소 대기 시간',
       ],
-      top: '10%',
+      top: '5%',
     },
     xAxis: {
       type: 'category',
       data: categories,
+      axisLabel: {
+        formatter: (value) => `${value}`, // X축 라벨에 "일" 추가
+        rotate: 0, // 라벨 기울기 설정
+        fontSize: 12, // 글씨 크기 조정
+      },
     },
     yAxis: [
       {

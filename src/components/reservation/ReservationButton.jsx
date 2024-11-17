@@ -55,9 +55,13 @@ const ReservationButton = ({ store }) => {
 
     const getCartInfo = async () => {
         const url = API_ENDPOINTS.cart.list(store.id);
-        const response = await fetchGET(url);
-        if (response.status === 200) {
-            setTotalAmount(calculateTotalAmount(response.data));
+        try{
+            const response = await fetchGET(url);
+            if (response.status === 200) {
+                setTotalAmount(calculateTotalAmount(response.data));
+            }
+        } catch(e) {
+            toast.error(e.message);
         }
     }
 

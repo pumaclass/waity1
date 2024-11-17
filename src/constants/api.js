@@ -1,3 +1,5 @@
+import { toast } from 'react-toastify';
+
 const API_BASE = 'http://localhost:8080';
 
 export const API_ENDPOINTS = {
@@ -97,21 +99,45 @@ export const API_ENDPOINTS = {
     }
 };
 
-// API 요청을 위한 헬퍼 함수
 export const fetchAPI = async (url, options = {}) => {
-    const token = localStorage.getItem('accessToken');
+    let token = localStorage.getItem('accessToken');
 
     try {
+        // API 요청
         const response = await fetch(url, {
             ...options,
             headers: {
                 ...(!(options.body instanceof FormData) && {
                     'Content-Type': 'application/json'
                 }),
-                ...(token && { 'Authorization': `${token}` }),
+                ...(token && { Authorization: `${token}` }),
                 ...options.headers
             }
         });
+
+        if (response.status === 401) {
+            // Access Token 만료로 인한 401 에러 처리
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+                // 새 토큰으로 헤더 업데이트 후 재요청
+                options.headers = {
+                    ...options.headers,
+                    Authorization: `${newToken}`
+                };
+                const retryResponse = await fetch(url, options);
+
+                if (!retryResponse.ok) {
+                    const errorData = await retryResponse.json().catch(() => ({}));
+                    console.error('Server Error after Retry:', errorData);
+                    throw new Error(errorData.message || 'API 요청에 실패했습니다.');
+                }
+
+                return await retryResponse.json();
+            } else {
+                handleSessionExpired(); // 세션 만료 처리
+                throw new Error('인증이 만료되었습니다.');
+            }
+        }
 
         if (!response.ok) {
             const errorData = await response.json().catch(() => ({}));
@@ -119,47 +145,106 @@ export const fetchAPI = async (url, options = {}) => {
             throw new Error(errorData.message || 'API 요청에 실패했습니다.');
         }
 
-        const data = await response.json();
-        return data;
+        return await response.json();
     } catch (error) {
         console.error('API Error:', error);
         throw error;
     }
 };
 
-// GET 요청을 위한 헬퍼 함수
 export const fetchGET = async (url, options = {}) => {
-    const token = localStorage.getItem('accessToken');
+    let token = localStorage.getItem('accessToken');
 
     // 쿼리 파라미터 처리
     const params = options.params ? new URLSearchParams(options.params).toString() : '';
     const finalUrl = params ? `${url}?${params}` : url;
 
     try {
-        const response = await fetch(finalUrl, {
+        let response = await fetch(finalUrl, {
             method: 'GET',
             headers: {
-                ...(token && { 'Authorization': `${token}` }),
+                ...(token && { Authorization: `${token}` }),
                 ...options.headers
             }
         });
 
-        const data = await response.json();
-        return data;
+        // Access Token 만료로 인한 401 처리
+        if (response.status === 401) {
+            const newToken = await refreshAccessToken();
+            if (newToken) {
+                // 새 토큰으로 재요청
+                token = newToken; // 토큰 갱신
+                response = await fetch(finalUrl, {
+                    method: 'GET',
+                    headers: {
+                        Authorization: `${newToken}`,
+                        ...options.headers
+                    }
+                });
+            } else {
+                handleSessionExpired(); // 세션 만료 처리
+                throw new Error('인증이 만료되었습니다.');
+            }
+        }
+
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('Server Error:', errorData);
+            throw new Error(errorData.message || 'API 요청에 실패했습니다.');
+        }
+
+        return await response.json();
     } catch (error) {
         console.error('API Error:', error);
         throw error;
     }
 };
 
+// Refresh Token으로 Access Token 갱신
+const refreshAccessToken = async () => {
+    const refreshToken = localStorage.getItem('refreshToken');
+
+    if (!refreshToken) {
+        handleSessionExpired();
+        return null;
+    }
+
+    try {
+        const response = await fetch(API_ENDPOINTS.auth.reissue, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Refresh-Token': refreshToken
+            }
+        });
+
+        if (response.ok) {
+            const data = await response.json();
+            const { accessToken, refreshToken: newRefreshToken } = data.data;
+
+            // 새 토큰 저장
+            localStorage.setItem('accessToken', accessToken);
+            if (newRefreshToken) {
+                localStorage.setItem('refreshToken', newRefreshToken);
+            }
+
+            return accessToken;
+        } else {
+            handleSessionExpired(); // 세션 만료 처리
+            return null;
+        }
+    } catch (error) {
+        console.error('Failed to refresh token:', error);
+        handleSessionExpired(); // 세션 만료 처리
+        return null;
+    }
+};
 
 
-    // 403 에러 처리
-    // if (response.status === 403) {
-    //     // 토큰이 만료되었거나 유효하지 않은 경우
-    //     localStorage.removeItem('accessToken');
-    //     localStorage.removeItem('refreshToken');
-    //     window.location.href = '/login';
-    //     throw new Error('인증이 필요합니다.');
-    // }
-
+// 세션 만료 처리 (로그아웃 및 로그인 페이지 이동)
+const handleSessionExpired = () => {
+    toast.error('세션이 만료되었습니다. 다시 로그인해주세요.');
+    localStorage.removeItem('accessToken');
+    localStorage.removeItem('refreshToken');
+    window.location.href = '/login';
+};

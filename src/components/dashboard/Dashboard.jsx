@@ -16,6 +16,7 @@ const Dashboard = ({ ...props }) => {
     const [startDate, setStartDate] = useState(formatDate(new Date() , 'yyyy-mm-dd'));
     const [endDate, setEndDate] = useState(formatDate(new Date() , 'yyyy-mm-dd'));
     const [reservationCount , setReservationCount] = useState(0);
+    const [waitingCount , setWaitingCount] = useState(0);
     const [labels , setLabels] = useState([]);
     const [amts , setAmts] = useState([]);
     const [fees , setFees] = useState([]);
@@ -29,6 +30,7 @@ const Dashboard = ({ ...props }) => {
         setEndDate(formatDate(today, 'yyyy-mm-dd'));
 
         fetchTodayReservationCount();
+        fetchWaitingCount();
     }, []);
 
     useEffect(() => {
@@ -57,6 +59,22 @@ const Dashboard = ({ ...props }) => {
             setEndDate(formatDate(new Date(), 'yyyy-mm-dd'));
         }
     }, [summaryType]);
+
+    const fetchWaitingCount = async() => {
+        try {
+            const response = await fetchGET(API_ENDPOINTS.waiting.ownerList(storeId), {
+            });
+            if (response.status === 200) {
+                console.log(response.data);
+                setWaitingCount(response.data.totalWaitingNumber);
+            } else {
+                toast.error(response.message);
+            }
+        } catch (error) {
+            toast.error("예약 처리 중 오류가 발생했습니다.");
+            console.error("예약 처리 중 오류 발생:", error);
+        }
+    }
 
     const fetchTodayReservationCount = async () => {
         try {
@@ -230,7 +248,7 @@ const Dashboard = ({ ...props }) => {
                 </div>
                 <div className="bg-white p-6 rounded-lg shadow-lg flex flex-col items-center">
                     <h2 className="text-xl font-semibold text-gray-700">현재 웨이팅 건수</h2>
-                    <p className="text-4xl font-bold text-blue-600">5</p> {/* 예시 숫자 */}
+                    <p className="text-4xl font-bold text-blue-600">{waitingCount}</p> {/* 예시 숫자 */}
                 </div>
             </div>
 

@@ -11,7 +11,8 @@ import { useUserStore } from '../../hooks/useStore';
 import { useWaiting } from '../../hooks/useWaiting';
 import { STORE_PLACEHOLDER } from '../../constants/images';
 import WaitingButton from '../../components/waiting/WaitingButton';
-import ReservationButton from "../../components/reservation/ReservationButton";
+import ReservationButton from '../../components/reservation/ReservationButton';
+import { DateTime } from 'luxon'; // 시간 비교를 위해 Luxon 사용
 
 const UserStoreDetailPage = () => {
     const { storeId } = useParams();
@@ -19,6 +20,7 @@ const UserStoreDetailPage = () => {
     const { store, loading, error, fetchStoreDetail } = useUserStore();
     const { checkWaitingStatus } = useWaiting();
     const [isWaiting, setIsWaiting] = useState(false);
+    const [isWithinOperatingHours, setIsWithinOperatingHours] = useState(false); // 운영 시간 여부 상태
     const [activeTab, setActiveTab] = useState('menu');
     const [showShareModal, setShowShareModal] = useState(false);
     const [initialized, setInitialized] = useState(false);
@@ -31,16 +33,25 @@ const UserStoreDetailPage = () => {
         }
     }, [storeId, initialized, fetchStoreDetail]);
 
-    // 디버깅을 위한 useEffect 추가
     useEffect(() => {
-        if (store) {
-            console.log('Store Data:', store);
+        if (store?.openTime && store?.closeTime) {
+            try {
+                const now = DateTime.now().setZone('Asia/Seoul'); // 현재 한국 시간
+                const openTime = DateTime.fromFormat(store.openTime, 'HH:mm:ss'); // 오픈 시간
+                const closeTime = DateTime.fromFormat(store.closeTime, 'HH:mm:ss'); // 마감 시간
+    
+                const isOperating = now >= openTime && now <= closeTime;
+    
+                setIsWithinOperatingHours(isOperating);
+            } catch (error) {
+                console.error('시간 비교 중 오류 발생:', error);
+            }
         }
     }, [store]);
+    
 
     // 웨이팅 상태 확인 및 초기화
     useEffect(() => {
-        console.log('웨이팅 상태 변경!')
         const fetchWaitingStatus = async () => {
             const status = await checkWaitingStatus(storeId);
             setIsWaiting(status);
@@ -61,7 +72,7 @@ const UserStoreDetailPage = () => {
                 await navigator.share({
                     title: store?.title,
                     text: store?.description,
-                    url: window.location.href
+                    url: window.location.href,
                 });
             } catch (error) {
                 console.error('Error sharing:', error);
@@ -94,14 +105,6 @@ const UserStoreDetailPage = () => {
         );
     }
 
-    // store 데이터 구조 로그
-    console.log('Current Store Data:', {
-        id: store.id,
-        title: store.title,
-        image: store.image,
-        description: store.description
-    });
-
     return (
         <div className="min-h-screen bg-gray-50">
             <Header
@@ -130,9 +133,9 @@ const UserStoreDetailPage = () => {
                     />
                     {store.isDeleted && (
                         <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-                           <span className="px-4 py-2 bg-red-500 text-white rounded-lg">
-                               현재 운영하지 않는 매장입니다
-                           </span>
+                            <span className="px-4 py-2 bg-red-500 text-white rounded-lg">
+                                현재 운영하지 않는 매장입니다
+                            </span>
                         </div>
                     )}
                 </div>
@@ -144,12 +147,18 @@ const UserStoreDetailPage = () => {
                             <h1 className="text-xl font-bold text-gray-900">{store.title}</h1>
                             {store.districtCategory && (
                                 <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mt-1">
-                                   {store.districtCategory.name}
-                               </span>
+                                    {store.districtCategory.name}
+                                </span>
                             )}
                         </div>
                         <div className="flex items-center">
-                            <Rating value={store.rating} readonly size="sm" showCount count={store.reviewCount} />
+                            <Rating
+                                value={store.rating}
+                                readonly
+                                size="sm"
+                                showCount
+                                count={store.reviewCount}
+                            />
                         </div>
                     </div>
 
@@ -166,8 +175,9 @@ const UserStoreDetailPage = () => {
                                     {store.openTime} - {store.closeTime}
                                     {store.lastOrder && (
                                         <span className="text-red-500">
-                                           <br />라스트오더 {store.lastOrder}
-                                       </span>
+                                            <br />
+                                            라스트오더 {store.lastOrder}
+                                        </span>
                                     )}
                                 </p>
                             </div>
@@ -178,11 +188,13 @@ const UserStoreDetailPage = () => {
                             <div>
                                 <p className="text-sm font-medium">테이블</p>
                                 <p className="text-sm">
-                                    총 {store.tableCount}개 / 예약 가능 {store.reservationTableCount}개
+                                    총 {store.tableCount}개 / 예약 가능{' '}
+                                    {store.reservationTableCount}개
                                     {store.turnover && (
                                         <span className="text-gray-500">
-                                           <br />평균 {store.turnover} 소요
-                                       </span>
+                                            <br />
+                                            평균 {store.turnover} 소요
+                                        </span>
                                     )}
                                 </p>
                             </div>
@@ -200,7 +212,10 @@ const UserStoreDetailPage = () => {
                             <Phone className="w-5 h-5 mr-3 flex-shrink-0" />
                             <div>
                                 <p className="text-sm font-medium">전화번호</p>
-                                <a href={`tel:${store.phoneNumber}`} className="text-sm text-blue-500">
+                                <a
+                                    href={`tel:${store.phoneNumber}`}
+                                    className="text-sm text-blue-500"
+                                >
                                     {store.phoneNumber}
                                 </a>
                             </div>
@@ -211,10 +226,11 @@ const UserStoreDetailPage = () => {
                     {!store.isDeleted && (
                         <div className="mt-3 flex justify-between gap-2">
                             <div className="flex-1">
-                                <WaitingButton 
-                                    storeId={storeId} 
-                                    isWaiting={isWaiting} 
-                                    onWaitingUpdate={handleWaitingUpdate} 
+                                <WaitingButton
+                                    storeId={storeId}
+                                    isWaiting={isWaiting}
+                                    onWaitingUpdate={handleWaitingUpdate}
+                                    disabled={isWithinOperatingHours} // 운영 시간에만 활성화
                                 />
                             </div>
                             <div className="flex-1">
