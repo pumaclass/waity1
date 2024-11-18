@@ -1,6 +1,6 @@
 import { toast } from 'react-toastify';
 
-const API_BASE = 'http://localhost:8080';
+const API_BASE = 'https://waity.shop';
 
 export const API_ENDPOINTS = {
     auth: {

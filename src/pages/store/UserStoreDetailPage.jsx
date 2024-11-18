@@ -39,10 +39,13 @@ const UserStoreDetailPage = () => {
                 const now = DateTime.now().setZone('Asia/Seoul'); // 현재 한국 시간
                 const openTime = DateTime.fromFormat(store.openTime, 'HH:mm:ss'); // 오픈 시간
                 const closeTime = DateTime.fromFormat(store.closeTime, 'HH:mm:ss'); // 마감 시간
-    
                 const isOperating = now >= openTime && now <= closeTime;
-    
+                
+                console.log(isOperating)
+                console.log(openTime)
+                console.log(closeTime)
                 setIsWithinOperatingHours(isOperating);
+                console.log(`waiting: ${isWithinOperatingHours}}`)
             } catch (error) {
                 console.error('시간 비교 중 오류 발생:', error);
             }
@@ -230,7 +233,7 @@ const UserStoreDetailPage = () => {
                                     storeId={storeId}
                                     isWaiting={isWaiting}
                                     onWaitingUpdate={handleWaitingUpdate}
-                                    disabled={isWithinOperatingHours} // 운영 시간에만 활성화
+                                    disabled={!isWithinOperatingHours} // 운영 시간에만 활성화
                                 />
                             </div>
                             <div className="flex-1">
