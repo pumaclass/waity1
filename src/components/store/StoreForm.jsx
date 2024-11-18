@@ -98,23 +98,33 @@ const StoreForm = ({ initialData }) => {
         }
     };
 
-    const handleAddressComplete = (data) => {
+    const handleAddressComplete = async (data) => {
         const { address } = data;
-        const geocoder = new window.kakao.maps.services.Geocoder();
 
-        geocoder.addressSearch(address, (result, status) => {
-            if (status === window.kakao.maps.services.Status.OK) {
-                const coords = result[0];
-                setFormData(prev => ({
-                    ...prev,
-                    address: address,
-                    latitude: parseFloat(coords.y),
-                    longitude: parseFloat(coords.x)
-                }));
-            }
-        });
+        // Promise로 감싸서 비동기 처리
+        const getCoords = () => {
+            return new Promise((resolve) => {
+                const geocoder = new window.kakao.maps.services.Geocoder();
+                geocoder.addressSearch(address, (result, status) => {
+                    if (status === window.kakao.maps.services.Status.OK) {
+                        resolve(result[0]);
+                    }
+                });
+            });
+        };
 
-        setShowAddressModal(false);
+        try {
+            const coords = await getCoords();
+            setFormData(prev => ({
+                ...prev,
+                address: address,
+                latitude: parseFloat(coords.y),
+                longitude: parseFloat(coords.x)
+            }));
+            setShowAddressModal(false);
+        } catch (error) {
+            console.error('주소 좌표 변환 실패:', error);
+        }
     };
 
     const handleSubmit = async (e) => {

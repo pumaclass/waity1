@@ -1,9 +1,11 @@
 import { Clock, MapPin, Star, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { STORE_PLACEHOLDER } from '../../constants/images';
+import Rating from '../common/Rating';
 
 const StoreCard = ({ store }) => {
     const navigate = useNavigate();
+    console.log('Store Data:', store); // 데이터 구조 확인
 
     if (!store) return null;
 
@@ -12,7 +14,7 @@ const StoreCard = ({ store }) => {
         image,
         title = '',
         description = '',
-        rating = 0,
+        averageRating = 0,  // rating 대신 averageRating 사용
         reviewCount = 0,
         address = '',
         openTime = '09:00:00',
@@ -69,19 +71,19 @@ const StoreCard = ({ store }) => {
                         <h3 className="font-medium text-gray-900">{title}</h3>
                         {districtCategory && (
                             <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mt-1">
-                               {districtCategory.name}
-                           </span>
+                              {districtCategory.name}
+                          </span>
                         )}
                     </div>
                     <div className="flex items-center space-x-4">
                         <div className="flex items-center">
-                            <Star className="w-4 h-4 text-yellow-400 fill-current" />
-                            <span className="ml-1 text-sm font-medium text-gray-900">
-                               {formatRating(rating)}
-                           </span>
-                            <span className="ml-1 text-sm text-gray-500">
-                               ({reviewCount})
-                           </span>
+                            <Rating
+                                value={Number(averageRating)}
+                                readonly={true}
+                                size="sm"
+                                showCount={true}
+                                count={reviewCount}
+                            />
                         </div>
                         <div className="flex items-center text-gray-500 text-sm">
                             <Eye className="w-4 h-4 mr-1" />
@@ -100,18 +102,18 @@ const StoreCard = ({ store }) => {
                     <div className="flex items-center text-sm text-gray-600">
                         <Clock className="w-4 h-4 mr-2" />
                         <span>
-                           {formatTime(openTime)} - {formatTime(closeTime)}
-                       </span>
+                          {formatTime(openTime)} - {formatTime(closeTime)}
+                      </span>
                         {lastOrder && (
                             <span className="ml-2 text-red-500">
-                               (LO {formatTime(lastOrder)})
-                           </span>
+                              (LO {formatTime(lastOrder)})
+                          </span>
                         )}
                         <span className={`ml-2 px-1.5 py-0.5 text-xs rounded ${
                             isOpen ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
-                           {isOpen ? '영업중' : '영업종료'}
-                       </span>
+                          {isOpen ? '영업중' : '영업종료'}
+                      </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                         <MapPin className="w-4 h-4 mr-2" />
