@@ -1,5 +1,5 @@
 import React, {useEffect, useState} from 'react';
-import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend } from 'chart.js';
+import { Chart, CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, LineController, BarController} from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import {formatDate} from '../../common/common'
 import {RESERVATION_TYPE , RESERVATION_STATUS, SUMMARY_DATE} from '../../constants/const';
@@ -8,7 +8,7 @@ import {toast} from "react-toastify";
 import WaitingStatistics from './WaitingDashboard'; // 추가된 모듈
 
 // 필요한 스케일 및 요소 등록
-Chart.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend);
+Chart.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, Tooltip, Legend, LineController, BarController);
 
 const Dashboard = ({ ...props }) => {
     const { storeId } = props;
