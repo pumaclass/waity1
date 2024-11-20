@@ -1,6 +1,7 @@
 import { toast } from 'react-toastify';
 
 const API_BASE = 'https://waity.shop';
+// const API_BASE = 'http://localhost:8080';
 
 export const API_ENDPOINTS = {
     auth: {
@@ -19,6 +20,9 @@ export const API_ENDPOINTS = {
         create: `${API_BASE}/api/v1/owner/stores`,
         update: (id) => `${API_BASE}/api/v1/owner/stores/${id}`,
         delete: (id) => `${API_BASE}/api/v1/owner/stores/${id}`,
+        toggleLike: (storeId) => `${API_BASE}/api/v1/user/stores/${storeId}`,  // 함수로 수정
+        getLikedStores: `${API_BASE}/api/v1/user/stores/likes`,
+        getLikeCount: (storeId) => `${API_BASE}/api/v1/user/stores/${storeId}/storelike`,  // 추가
     },
     menu: {
         list: (storeId) => `${API_BASE}/api/v2/stores/${storeId}/menus`,
@@ -33,6 +37,7 @@ export const API_ENDPOINTS = {
         autocomplete: `${API_BASE}/api/search/autocomplete`,
         search: `${API_BASE}/api/search`
     },
+
     waiting: {
         connect: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings/connection`,
         add: (storeId) => `${API_BASE}/api/v2/user/stores/${storeId}/waitings`,
@@ -96,8 +101,12 @@ export const API_ENDPOINTS = {
     },
     settlement: {
         summary: (storeId) => `${API_BASE}/api/v2/store/${storeId}/settlement/summary`
+    },
+    chatbot: {
+        inquiry: `${API_BASE}/api/v2/chatbot/inquiry`
     }
-};
+
+    };
 
 export const fetchAPI = async (url, options = {}) => {
     return await makeRequest(url, {

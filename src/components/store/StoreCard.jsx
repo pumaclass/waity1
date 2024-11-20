@@ -1,9 +1,11 @@
-import { Clock, MapPin, Star, Eye } from 'lucide-react';
+// src/components/store/StoreCard.js
+import { Clock, MapPin, Eye } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { STORE_PLACEHOLDER } from '../../constants/images';
 import Rating from '../common/Rating';
+import LikeButton from '../common/LikeButton';
 
-const StoreCard = ({ store }) => {
+const StoreCard = ({ store, onLikeClick }) => {
     const navigate = useNavigate();
     console.log('Store Data:', store); // 데이터 구조 확인
 
@@ -14,7 +16,7 @@ const StoreCard = ({ store }) => {
         image,
         title = '',
         description = '',
-        averageRating = 0,  // rating 대신 averageRating 사용
+        averageRating = 0,
         reviewCount = 0,
         address = '',
         openTime = '09:00:00',
@@ -24,7 +26,9 @@ const StoreCard = ({ store }) => {
         distance = null,
         view = 0,
         deposit = 0,
-        districtCategory
+        districtCategory,
+        liked = false,
+        likeCount = 0
     } = store;
 
     const formatTime = (time) => {
@@ -35,16 +39,17 @@ const StoreCard = ({ store }) => {
         }
     };
 
-    const formatRating = (value) => {
-        const numericRating = Number(value) || 0;
-        return numericRating.toFixed(1);
-    };
-
     const formatDistance = (value) => {
         if (typeof value !== 'number') return null;
         return value < 1 ?
             `${(value * 1000).toFixed(0)}m` :
             `${value.toFixed(1)}km`;
+    };
+
+    const handleLikeClick = (e) => {
+        e.stopPropagation();
+        console.log('좋아요 버튼 클릭됨, storeId:', store.id);
+        onLikeClick?.(store.id);
     };
 
     return (
@@ -71,8 +76,8 @@ const StoreCard = ({ store }) => {
                         <h3 className="font-medium text-gray-900">{title}</h3>
                         {districtCategory && (
                             <span className="inline-block px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full mt-1">
-                              {districtCategory.name}
-                          </span>
+                                {districtCategory.name}
+                            </span>
                         )}
                     </div>
                     <div className="flex items-center space-x-4">
@@ -89,6 +94,12 @@ const StoreCard = ({ store }) => {
                             <Eye className="w-4 h-4 mr-1" />
                             {view}
                         </div>
+                        <LikeButton
+                            liked={liked}
+                            likeCount={likeCount}
+                            onClick={handleLikeClick}
+                            size="sm"
+                        />
                     </div>
                 </div>
 
@@ -102,18 +113,18 @@ const StoreCard = ({ store }) => {
                     <div className="flex items-center text-sm text-gray-600">
                         <Clock className="w-4 h-4 mr-2" />
                         <span>
-                          {formatTime(openTime)} - {formatTime(closeTime)}
-                      </span>
+                            {formatTime(openTime)} - {formatTime(closeTime)}
+                        </span>
                         {lastOrder && (
                             <span className="ml-2 text-red-500">
-                              (LO {formatTime(lastOrder)})
-                          </span>
+                                (LO {formatTime(lastOrder)})
+                            </span>
                         )}
                         <span className={`ml-2 px-1.5 py-0.5 text-xs rounded ${
                             isOpen ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
-                          {isOpen ? '영업중' : '영업종료'}
-                      </span>
+                            {isOpen ? '영업중' : '영업종료'}
+                        </span>
                     </div>
                     <div className="flex items-center text-sm text-gray-600">
                         <MapPin className="w-4 h-4 mr-2" />

@@ -1,3 +1,4 @@
+// src/pages/store/UserStoreListPage.js
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Search } from 'lucide-react';
@@ -9,7 +10,13 @@ import { API_ENDPOINTS, fetchAPI } from '../../constants/api';
 
 const UserStoreListPage = () => {
     const navigate = useNavigate();
-    const { stores, loading, error, fetchStores } = useUserStore();
+    const {
+        stores,
+        loading,
+        error,
+        fetchStores,
+        toggleStoreLike     // toggleStoreLike 추가
+    } = useUserStore();
     const [searchTerm, setSearchTerm] = useState('');
     const [initialized, setInitialized] = useState(false);
     const [autocompleteResults, setAutocompleteResults] = useState([]);
@@ -56,23 +63,33 @@ const UserStoreListPage = () => {
         });
     }, [searchTerm]);
 
+    // 좋아요 토글 처리 함수
+    const handleStoreLike = async (storeId) => {
+        try {
+            console.log('좋아요 버튼 클릭:', storeId);
+            await toggleStoreLike(storeId);
+        } catch (error) {
+            console.error('좋아요 처리 중 오류가 발생했습니다:', error);
+        }
+    };
+
+
     const handleSearch = (e) => {
         e.preventDefault();
         if (searchTerm.trim()) {
             navigate(`/stores/search?q=${encodeURIComponent(searchTerm)}`);
-            setShowAutocomplete(false);  // 검색 시 자동완성 리스트 닫기
+            setShowAutocomplete(false);
         }
     };
 
     const handleAutocompleteClick = (store) => {
         navigate(`/stores/${store.id}`);
-        setShowAutocomplete(false); // 클릭 시 자동완성 리스트 닫기
+        setShowAutocomplete(false);
     };
 
-    // 일치하는 부분을 하이라이트하는 함수
     const highlightMatch = (text, highlight) => {
         if (!highlight.trim()) return text;
-        const regex = new RegExp(`(${highlight})`, 'gi'); // 대소문자 무시
+        const regex = new RegExp(`(${highlight})`, 'gi');
         const parts = text.split(regex);
         return parts.map((part, index) =>
             part.toLowerCase() === highlight.toLowerCase() ? (
@@ -100,7 +117,7 @@ const UserStoreListPage = () => {
                                 placeholder="맛집을 검색해보세요"
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
-                                onFocus={() => setShowAutocomplete(true)} // 입력 시 자동완성 리스트 표시
+                                onFocus={() => setShowAutocomplete(true)}
                                 className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                             />
                         </div>
@@ -115,9 +132,12 @@ const UserStoreListPage = () => {
                                     onClick={() => handleAutocompleteClick(store)}
                                     className="p-2 hover:bg-gray-100 cursor-pointer flex items-center"
                                 >
-                                    <img src={store.image} alt={store.title} className="w-12 h-12 object-cover rounded mr-3" />
+                                    <img
+                                        src={store.image}
+                                        alt={store.title}
+                                        className="w-12 h-12 object-cover rounded mr-3"
+                                    />
                                     <div>
-                                        {/* 하이라이트 적용 */}
                                         <p className="text-gray-800 font-medium">
                                             {highlightMatch(store.title, searchTerm)}
                                         </p>
@@ -145,7 +165,7 @@ const UserStoreListPage = () => {
                                 <StoreCard
                                     key={store.id}
                                     store={store}
-                                    onClick={() => navigate(`/stores/${store.id}`)}
+                                    onLikeClick={handleStoreLike}
                                 />
                             ))}
                         </div>

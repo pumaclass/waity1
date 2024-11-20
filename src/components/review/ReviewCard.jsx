@@ -1,9 +1,10 @@
+// src/components/review/ReviewCard.js
 import React from 'react';
-import { ThumbsUp } from 'lucide-react';
 import Rating from '../common/Rating';
+import LikeButton from '../common/LikeButton';
 import { PLACEHOLDER_IMAGE } from '../../constants/images';
 
-const ReviewCard = ({ review }) => {
+const ReviewCard = ({ review, onLikeClick }) => {
     const {
         id,
         title,
@@ -27,6 +28,10 @@ const ReviewCard = ({ review }) => {
         });
     };
 
+    const handleLikeClick = () => {
+        onLikeClick?.(id);
+    };
+
     return (
         <div className="p-4 border-b">
             <div className="flex justify-between items-start mb-3">
@@ -44,13 +49,12 @@ const ReviewCard = ({ review }) => {
                         </div>
                     )}
                 </div>
-                <button
-                    className={`flex items-center space-x-1 px-2 py-1 rounded-full transition-colors
-                        ${liked ? 'text-blue-500 bg-blue-50' : 'text-gray-500 hover:bg-gray-50'}`}
-                >
-                    <ThumbsUp className={`w-4 h-4 ${liked ? 'fill-current' : ''}`} />
-                    <span className="text-sm">{likeCount}</span>
-                </button>
+                <LikeButton
+                    liked={liked}
+                    likeCount={likeCount}
+                    onClick={handleLikeClick}
+                    size="sm"
+                />
             </div>
 
             {title && <h3 className="font-medium mb-2">{title}</h3>}

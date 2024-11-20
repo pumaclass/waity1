@@ -3,7 +3,6 @@ import { useState, useCallback } from 'react';
 import { API_ENDPOINTS, fetchAPI } from '../constants/api';
 import { STORE_PLACEHOLDER } from '../constants/images';
 
-
 const isStoreOpen = (openTime, closeTime) => {
     if (!openTime || !closeTime) return false;
 
@@ -19,24 +18,12 @@ const isStoreOpen = (openTime, closeTime) => {
     return currentTime >= openMinutes && currentTime <= closeMinutes;
 };
 
-const convertImageUrl = (imageUrl) => {
-    if (!imageUrl) return STORE_PLACEHOLDER;
-
-    // S3 URL을 CloudFront URL로 변환
-    if (imageUrl.includes('final17-bucket.s3')) {
-        const key = imageUrl.split('.com/')[1];
-        return `https://d1bmwiwkiumqh6.cloudfront.net/${key}`;
-    }
-
-    return imageUrl;
-};
-
 const processStoreData = (store) => ({
     ...store,
     rating: store.rating || 0,
     reviewCount: store.reviewCount || 0,
     isOpen: isStoreOpen(store.openTime, store.closeTime),
-    image: convertImageUrl(store.image),  // 이미지 URL 변환 로직 추가
+    image: store.image || STORE_PLACEHOLDER,  // 이미지 기본값 처리
     user: store.userOneResponseDto,
     districtCategory: store.districtCategory || null
 });
@@ -47,18 +34,42 @@ export const useOwnerStore = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
 
-    const fetchStores = async () => {
+    const fetchStores = useCallback(async () => {
+        if (loading) return;
+
         try {
             setLoading(true);
-            const response = await fetchAPI(API_ENDPOINTS.store.myStore);
+            const response = await fetchAPI(API_ENDPOINTS.store.list);
             const storeList = response.data?.content || [];
-            setStores(storeList.map(processStoreData));
+
+            // 각 스토어의 좋아요 수를 가져오기
+            const storesWithLikes = await Promise.all(
+                storeList.map(async store => {
+                    try {
+                        const likeResponse = await fetchAPI(API_ENDPOINTS.store.getLikeCount(store.id));
+                        return {
+                            ...processStoreData(store),
+                            distance: store.distance || null,
+                            likeCount: likeResponse.data.storeLikeCount
+                        };
+                    } catch (error) {
+                        console.error(`Failed to fetch like count for store ${store.id}:`, error);
+                        return {
+                            ...processStoreData(store),
+                            distance: store.distance || null,
+                            likeCount: 0
+                        };
+                    }
+                })
+            );
+
+            setStores(storesWithLikes);
         } catch (err) {
             setError(err.message);
         } finally {
             setLoading(false);
         }
-    };
+    }, [loading]);
 
     const fetchStoreDetail = async (storeId) => {
         if (!storeId) return;
@@ -144,6 +155,7 @@ export const useUserStore = () => {
     const [store, setStore] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
+    const [likes, setLikes] = useState([]);
 
     const searchStores = async (keyword, filters = {}) => {
         try {
@@ -186,7 +198,7 @@ export const useUserStore = () => {
         } finally {
             setLoading(false);
         }
-    }, [loading]); // loading을 dependency로 추가
+    }, [loading]);
 
     const fetchStoreDetail = async (storeId) => {
         if (!storeId) return;
@@ -202,14 +214,81 @@ export const useUserStore = () => {
         }
     };
 
+    const toggleStoreLike = async (storeId) => {
+        try {
+            console.log('toggleStoreLike 호출:', storeId);
+
+            // 좋아요 토글
+            const toggleResponse = await fetchAPI(API_ENDPOINTS.store.toggleLike(storeId), {
+                method: 'PATCH',
+            });
+            console.log('좋아요 토글 응답:', toggleResponse);
+
+            // 좋아요 수 조회
+            const countResponse = await fetchAPI(API_ENDPOINTS.store.getLikeCount(storeId));
+            console.log('좋아요 수 응답:', countResponse);
+
+            // 상태 업데이트
+            setStores(prev => prev.map(store => {
+                if (store.id === storeId) {
+                    return {
+                        ...store,
+                        liked: toggleResponse.data.storeLike,
+                        likeCount: countResponse.data.storeLikeCount
+                    };
+                }
+                return store;
+            }));
+
+            return {
+                isLiked: toggleResponse.data.storeLike,
+                likeCount: countResponse.data.storeLikeCount
+            };
+        } catch (error) {
+            console.error('toggleStoreLike 에러:', error);
+            throw error;
+        }
+    };
+
+    const fetchLikedStores = async (page = 0) => {
+        try {
+            setLoading(true);
+            const response = await fetchAPI(
+                `${API_ENDPOINTS.store.getLikedStores}?page=${page}&size=10`
+            );
+            setLikes(response.data.content);
+            return response.data;
+        } catch (error) {
+            setError('좋아요 목록을 불러오는데 실패했습니다.');
+            console.error(error);
+            throw error;
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const getStoreLikeCount = async (storeId) => {
+        try {
+            const response = await fetchAPI(API_ENDPOINTS.store.getLikeCount(storeId));
+            return response.data.storeLikeCount;
+        } catch (error) {
+            console.error('좋아요 수 조회 중 오류가 발생했습니다:', error);
+            throw error;
+        }
+    };
+
     return {
         stores,
         store,
+        likes,
         loading,
         error,
         searchStores,
         fetchStores,
         fetchStoreDetail,
-        setStore
+        setStore,
+        toggleStoreLike,
+        fetchLikedStores,
+        getStoreLikeCount
     };
 };
